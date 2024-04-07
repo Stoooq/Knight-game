@@ -23,7 +23,7 @@ class Sprite {
     }
 
     draw = () => {
-        board.c.drawImage(this.image, 
+        c.drawImage(this.image, 
             this.framesCurrent * (this.image.width / this.columns), 
             this.row * (this.image.height / this.rows), 
             this.image.width / this.columns, 

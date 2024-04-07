@@ -19,11 +19,12 @@ class Background {
         c.imageSmoothingEnabled = false;
     }
 
-    update = (player) => {
-        this.draw(player.position.x, player.state, player.fictionPosition, player.width)
+    update = (player, gameWidth) => {
+        this.draw(player.position.x, player.state, player.fictionPosition, player.width, gameWidth)
     }
 
-    draw = (pPosX, pState, pFicPosX, pWidth) => {
+    draw = (pPosX, pState, pFicPosX, pWidth, gameWidth) => {
+        // const gameImages = Math.round(gameWidth / canvas.width)
         if (pPosX === 0.8 * canvas.width - pWidth && pState.state !== 'IDLE') {
             this.positionX1 = -pPosX + 0.8 * canvas.width - pWidth - 0.2 * pFicPosX
             this.positionX2 = -pPosX + 0.8 * canvas.width - pWidth - 0.5 * pFicPosX
@@ -34,6 +35,12 @@ class Background {
             this.positionX2 = -pPosX + 0.2 * canvas.width - 0.5 * pFicPosX
             this.positionX3 = -pPosX + 0.2 * canvas.width - 0.8 * pFicPosX
         }
+        // let cos = this.positionX3
+        // for (let i = 1; i < gameImages; i++) {
+        //     if (pFicPosX > i * canvas.width) {
+        //         cos += i * canvas.width
+        //     }
+        // }
         c.drawImage(this.image1, this.positionX1, 0, canvas.width, canvas.height)
         c.drawImage(this.image1, this.positionX1 + canvas.width, 0, canvas.width, canvas.height)
         c.drawImage(this.image2, this.positionX2, 0, canvas.width, canvas.height)

@@ -1,33 +1,81 @@
-import { STATES, Idle, Moving, Jump } from "./PlayerState.js"
+import { SPRITES, STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk } from "./PlayerState.js"
+import Sprite from "./Sprite.js"
 
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
 
-class Player {
-    constructor ({ position, velocity, width, height }) {
-        this.position = position
+class Player extends Sprite {
+    constructor ({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, maxFrames = 1, offset = {x: 0, y: 0}, attackBox = { offset: {}, width: 100, height: 50 } }) {
+        super({
+            position,
+            imageSrc,
+            scale,
+            columns,
+            maxFrames,
+            offset
+        })
+
+        //Player properties
+        // this.position = position
         this.velocity = velocity
         this.width = width
         this.height = height
-        this.gravity = 0.25
-        this.state = null
-        this.states = [new Idle(this), new Moving(this), new Jump(this)]
-        this.setState(STATES.MOVING)
-        this.previousState = null
-        this.onGround = false
+        this.gravity = 0.5
         this.fictionPosition = this.position.x
+
+        //Player state and sprite properties
+        this.state = null
+        this.states = [new Idle(this), new Running(this), new Jump(this), new Fall(this), new Crouch(this), new CrouchWalk(this)]
+        this.setState(STATES.IDLE)
+        this.setSprite(SPRITES.IDLE)
+
+        //Player parameters
+        this.onGround = false
+        this.direction = 1
+        this.isAttacking = false
+        this.health = 100
+
+        //Player attackBox
+        this.attackBox = {
+            position: {
+                x: this.position.x,
+                y: this.position.x,
+            },
+            offset: attackBox.offset,
+            width: attackBox.width,
+            height: attackBox.height
+        }
     }
 
     update = ({ keys, gameWidth, gameHeight }) => {
-        console.log(gameWidth);
-        this.changeState(keys)
         this.state.input(keys)
-        this.draw(gameWidth, gameHeight)
+        this.draw()
+        this.animateFrames()
+        this.moving(gameWidth)
+
+        c.fillStyle = 'red'
+        // c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+        this.attackBox.position.x = this.position.x
+        this.attackBox.position.y = this.position.y
     }
 
-    draw = (gameWidth, gameHeight) => {
-        c.fillStyle = 'red'
-        c.fillRect(this.position.x, this.position.y, this.width, this.height)
+    // draw = () => {
+    //     c.fillStyle = 'red'
+    //     c.fillRect(this.position.x, this.position.y, this.width, this.height)
+    // }
+
+    setState = (state) => {
+        this.state = this.states[state]
+    }
+
+    setSprite = (sprite) => {
+        // this.framesCurrent = 0
+        this.image.src = sprite.imageSrc
+        this.columns = sprite.columns
+        this.maxFrames = sprite.maxFrames
+    }
+
+    moving = (gameWidth) => {
         this.velocity.y += this.gravity
         this.position.y += this.velocity.y
         if (this.position.y + this.height >= canvas.height) {
@@ -54,24 +102,6 @@ class Player {
         }
         if (this.position.x <= 0) {
             this.position.x = 0
-        }
-        console.log(this.fictionPosition);
-    }
-
-    setState = (state) => {
-        this.previousState = this.state
-        this.state = this.states[state]
-    }
-
-    changeState = (keys) => {
-        if (keys.length === 0) {
-            this.setState(STATES.IDLE)
-        }
-        if (keys.includes('ArrowLeft') || keys.includes('ArrowRight')) {
-            this.setState(STATES.MOVING)
-        }
-        if (keys.includes('ArrowUp')) {
-            this.setState(STATES.JUMP)
         }
     }
 }

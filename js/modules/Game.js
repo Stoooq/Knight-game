@@ -18,8 +18,16 @@ class Game {
                 x: 0,
                 y: 0
             },
-            width: 50,
-            height: 100
+            width: 86,
+            height: 118,
+            imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Idle.png',
+            scale: 3,
+            columns: 10,
+            maxFrames: 10,
+            offset: {
+                x: 130,
+                y: 122,
+            }
         })
         this.input = new Input()
         this.background = new Background({
@@ -31,7 +39,7 @@ class Game {
     }
 
     update = () => {
-        this.background.update(this.player)
+        this.background.update(this.player, this.width)
         this.player.update({
             keys: this.input.keys,
             gameWidth: this.width,
