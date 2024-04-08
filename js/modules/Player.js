@@ -76,7 +76,13 @@ class Player extends Sprite {
     }
 
     moving = (gameWidth) => {
-        this.velocity.y += this.gravity
+        if (this.onGround) {
+            this.gravity = 0
+        }
+        if (!this.onGround) {
+            this.gravity = 0.5
+            this.velocity.y += this.gravity
+        }
         this.position.y += this.velocity.y
         if (this.position.y + this.height >= canvas.height) {
             this.position.y = canvas.height - this.height

@@ -68,10 +68,10 @@ class Idle extends State {
             this.player.setSprite(SPRITES.IDLE)
             this.player.velocity.x = 0
         }
-        if (keys.includes('ArrowLeft')) { 
+        if (keys.includes('ArrowRight')) {
             this.player.setState(STATES.RUNNING)
         }
-        if (keys.includes('ArrowRight')) {
+        if (keys.includes('ArrowLeft')) { 
             this.player.setState(STATES.RUNNING)
         }
         if (keys.includes('ArrowUp') && this.player.onGround) {
@@ -131,11 +131,11 @@ class Jump extends State {
         if(this.player.velocity.y > 0) {
             this.player.setState(STATES.FALL)
         }
-        if (keys.includes('ArrowLeft')) { 
-            this.player.velocity.x = -5
-        }
         if (keys.includes('ArrowRight')) { 
             this.player.velocity.x = 5
+        }
+        if (keys.includes('ArrowLeft')) { 
+            this.player.velocity.x = -5
         }
         if (this.player.onGround) {
             this.player.setState(STATES.IDLE)
@@ -159,11 +159,11 @@ class Fall extends State {
         if(this.player.onGround) {
             this.player.setState(STATES.IDLE)
         }
-        if (keys.includes('ArrowLeft')) { 
-            this.player.velocity.x = -5
-        }
         if (keys.includes('ArrowRight')) { 
             this.player.velocity.x = 5
+        }
+        if (keys.includes('ArrowLeft')) { 
+            this.player.velocity.x = -5
         }
     }
 }
@@ -183,6 +183,9 @@ class Crouch extends State {
             this.player.velocity.x = 0
         }
         if (keys.includes('ArrowRight')) { 
+            this.player.setState(STATES.CROUCHWALK)
+        }
+        if (keys.includes('ArrowLeft')) { 
             this.player.setState(STATES.CROUCHWALK)
         }
         if (keys.length === 0) { 
@@ -210,7 +213,7 @@ class CrouchWalk extends State {
             this.player.setSprite(SPRITES.CROUCHWALK)
             this.player.velocity.x = -2.5
         }
-        if (keys.includes('ArrowDown') && !keys.includes('ArrowRight')) {
+        if (keys.includes('ArrowDown') && !keys.includes('ArrowRight') && !keys.includes('ArrowLeft')) {
             this.player.setState(STATES.CROUCH)
         }
         if (!keys.includes('ArrowDown')) { 

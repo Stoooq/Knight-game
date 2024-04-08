@@ -1,6 +1,9 @@
 import Player from "./Player.js";
 import Input from "./Input.js";
 import Background from "./Background.js";
+import CollisionBlock from "./CollisionBlock.js";
+import { arrayParse2D, checkPlayerCollision } from "../utils.js";
+import { collisions } from "../data/collisions.js"
 
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
@@ -36,14 +39,32 @@ class Game {
                 y: 0
             }
         })
+        this.collisionBlocks = []
+        this.parsedCollisions = arrayParse2D(collisions)
+        this.parsedCollisions.forEach((row, posY) => {
+            row.forEach((number, posX) => {
+                if (number === 579) {
+                    this.collisionBlocks.push(new CollisionBlock({
+                    position: {
+                        x: posX * 64,
+                        y: posY * 64
+                    }
+                    }))
+                }
+            })
+        })
     }
 
     update = () => {
-        this.background.update(this.player, this.width)
+        checkPlayerCollision(this.player, this.collisionBlocks)
+        this.background.update(this.player, this.width, this.collisionBlocks)
         this.player.update({
             keys: this.input.keys,
             gameWidth: this.width,
             gameHeight: this.height
+        })
+        this.collisionBlocks.forEach(block => {
+            block.draw()
         })
     }
 }
