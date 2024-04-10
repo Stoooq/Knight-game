@@ -32,8 +32,9 @@ class Player extends Sprite {
         //Player parameters
         this.onGround = false
         this.direction = 1
-        this.isAttacking = false
+        this.attacking = false
         this.health = 100
+        this.stopped = false
 
         //Player attackBox
         this.attackBox = {
@@ -77,18 +78,24 @@ class Player extends Sprite {
 
     moving = (gameWidth) => {
         if (this.onGround) {
-            this.gravity = 0
         }
         if (!this.onGround) {
-            this.gravity = 0.5
-            this.velocity.y += this.gravity
+            // this.gravity = 0.5
+        }
+        console.log(this.stopped);
+        if (!this.stopped) {
+            this.position.x += this.velocity.x
         }
         this.position.y += this.velocity.y
-        if (this.position.y + this.height >= canvas.height) {
-            this.position.y = canvas.height - this.height
-            this.onGround = true
-        }
-        this.position.x += this.velocity.x
+        this.velocity.y += this.gravity
+        
+        // if (this.position.y + this.height + this.velocity.y >= canvas.height) {
+        //     this.velocity.y = 0
+        //     this.onGround = true
+        // } else {
+        // }
+
+        //Setting positions
         if (this.fictionPosition >= gameWidth) {
             this.fictionPosition = gameWidth
         }
@@ -97,18 +104,19 @@ class Player extends Sprite {
         }
         if (this.position.x + this.width >= 0.8 * canvas.width && this.fictionPosition !== gameWidth) {
             this.position.x = 0.8 * canvas.width - this.width
-            this.fictionPosition += this.velocity.x
+            !this.stopped ? this.fictionPosition += this.velocity.x :''
         }
         if (this.position.x + this.width >= canvas.width) {
             this.position.x = canvas.width - this.width
         }
         if (this.position.x <= 0.2 * canvas.width && this.fictionPosition !== 0) {
             this.position.x = 0.2 * canvas.width
-            this.fictionPosition += this.velocity.x
+            !this.stopped ? this.fictionPosition += this.velocity.x : ''
         }
         if (this.position.x <= 0) {
             this.position.x = 0
         }
+        this.stopped = false
     }
 }
 

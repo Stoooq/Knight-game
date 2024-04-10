@@ -206,12 +206,14 @@ class CrouchWalk extends State {
         if (keys.includes('ArrowRight')) { 
             this.player.setState(STATES.CROUCHWALK)
             this.player.setSprite(SPRITES.CROUCHWALK)
+            this.player.direction = 1
             this.player.velocity.x = 2.5
         }
         if (keys.includes('ArrowLeft')) { 
             this.player.setState(STATES.CROUCHWALK)
             this.player.setSprite(SPRITES.CROUCHWALK)
-            this.player.velocity.x = -2.5
+            this.player.direction = -1
+            this.player.velocity.x = 2.5 * this.player.direction
         }
         if (keys.includes('ArrowDown') && !keys.includes('ArrowRight') && !keys.includes('ArrowLeft')) {
             this.player.setState(STATES.CROUCH)

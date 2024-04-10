@@ -21,15 +21,14 @@ class Game {
                 x: 0,
                 y: 0
             },
-            width: 86,
-            height: 118,
+            width: 66,
+            height: 114,
             imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Idle.png',
             scale: 3,
-            columns: 10,
             maxFrames: 10,
             offset: {
                 x: 130,
-                y: 122,
+                y: 125,
             }
         })
         this.input = new Input()
