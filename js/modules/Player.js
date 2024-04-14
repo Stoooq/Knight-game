@@ -1,5 +1,6 @@
 import { SPRITES, STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk, Attack } from "./PlayerState.js"
 import Sprite from "./Sprite.js"
+import healthBarImg from '/assets/Pixel UI pack 3/06.png'
 
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
@@ -54,7 +55,7 @@ class Player extends Sprite {
                 x: this.position.x,
                 y: this.position.y
             },
-            imageSrc: '../assets/Pixel UI pack 3/06.png',
+            imageSrc: healthBarImg,
             scale: 2,
             columns: 5,
             rows: 15,
@@ -69,6 +70,7 @@ class Player extends Sprite {
 
     update = ({ keys, gameWidth, gameHeight }) => {
         this.state.input(keys)
+        this.ddraw()
         this.draw()
         this.animateFrames()
         this.moving(gameWidth)
@@ -86,10 +88,10 @@ class Player extends Sprite {
         this.attackBox.position.y = this.position.y
     }
 
-    // draw = () => {
-    //     c.fillStyle = 'red'
-    //     c.fillRect(this.position.x, this.position.y, this.width, this.height)
-    // }
+    ddraw = () => {
+        c.fillStyle = 'red'
+        c.fillRect(this.position.x, this.position.y, this.width, this.height)
+    }
 
     setState = (state) => {
         this.previousState = this.state

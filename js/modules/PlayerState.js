@@ -1,43 +1,51 @@
+import idle from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Idle.png'
+import run from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Run.png'
+import jump from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Jump.png'
+import fall from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Fall.png'
+import crouch from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Crouch.png'
+import crouchWalk from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_CrouchWalk.png'
+import attack from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Attack.png'
+
 const SPRITES = {
     IDLE: {
-        imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Idle.png',
+        imageSrc: idle,
         columns: 10,
         maxFrames: 10
     },
     RUNNING: {
         left: {
-            imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Run.png',
+            imageSrc: run,
             columns: 10,
             maxFrames: 10
         },
         right: {
-            imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Run.png',
+            imageSrc: run,
             columns: 10,
             maxFrames: 10
         }
     },
     JUMP: {
-        imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Jump.png',
+        imageSrc: jump,
         columns: 3,
         maxFrames: 3
     },
     FALL: {
-        imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Fall.png',
+        imageSrc: fall,
         columns: 3,
         maxFrames: 3
     },
     CROUCH: {
-        imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Crouch.png',
+        imageSrc: crouch,
         columns: 1,
         maxFrames: 1
     },
     CROUCHWALK: {
-        imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_CrouchWalk.png',
+        imageSrc: crouchWalk,
         columns: 8,
         maxFrames: 8
     },
     ATTACK: {
-        imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Attack.png',
+        imageSrc: attack,
         columns: 4,
         maxFrames: 4
     }
@@ -73,6 +81,7 @@ class Idle extends State {
             this.player.setState(STATES.IDLE)
             this.player.setSprite(SPRITES.IDLE)
             this.player.velocity.x = 0
+            this.player.crouching = false
         }
         if (keys.includes('ArrowRight')) {
             this.player.setState(STATES.RUNNING)

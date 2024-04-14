@@ -1,3 +1,8 @@
+import bg1 from '/assets/oak_woods_v1.0/background/background_layer_1.png'
+import bg2 from '/assets/oak_woods_v1.0/background/background_layer_2.png'
+import bg3 from '/assets/oak_woods_v1.0/background/background_layer_3.png'
+import bgBlocks from '/assets/newmap.png'
+
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
 
@@ -5,13 +10,13 @@ class Background {
     constructor ({ position }) {
         this.position = position
         this.image1 = new Image()
-        this.image1.src = '../assets/oak_woods_v1.0/background/background_layer_1.png'
+        this.image1.src = bg1
         this.image2 = new Image()
-        this.image2.src = '../assets/oak_woods_v1.0/background/background_layer_2.png'
+        this.image2.src = bg2
         this.image3 = new Image()
-        this.image3.src = '../assets/oak_woods_v1.0/background/background_layer_3.png'
+        this.image3.src = bg3
         this.image4 = new Image()
-        this.image4.src = '../assets/newmap.png'
+        this.image4.src = bgBlocks
         this.positionX1 = 0
         this.positionX2 = 0
         this.positionX3 = 0

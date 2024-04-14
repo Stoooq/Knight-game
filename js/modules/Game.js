@@ -5,6 +5,8 @@ import CollisionBlock from "./CollisionBlock.js";
 import { arrayParse2D, checkPlayerCollision, checkPlayerEnemyPosition } from "../utils.js";
 import { collisions } from "../data/collisions.js"
 import Enemy from "./Enemy.js";
+import playerImg from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Idle.png'
+import enemyImg from '/assets/Slime/slime-Sheet.png'
 
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
@@ -22,13 +24,13 @@ class Game {
                 x: 0,
                 y: 0
             },
-            width: 66,
+            width: 63,
             height: 114,
-            imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Idle.png',
+            imageSrc: playerImg,
             scale: 3,
             maxFrames: 10,
             offset: {
-                x: 130,
+                x: 132,
                 y: 125,
             }
         })
@@ -64,7 +66,7 @@ class Game {
             },
             width: 75,
             height: 45,
-            imageSrc: '../assets/Slime/slime-Sheet.png',
+            imageSrc: enemyImg,
             scale: 3,
             columns: 8,
             rows: 3,

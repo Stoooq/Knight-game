@@ -1,4 +1,5 @@
 import Sprite from "./Sprite.js"
+import healthBarImg from '/assets/Pixel UI pack 3/06.png'
 
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
@@ -28,7 +29,7 @@ class Enemy extends Sprite {
                 x: this.position.x,
                 y: this.position.y
             },
-            imageSrc: '../assets/Pixel UI pack 3/06.png',
+            imageSrc: healthBarImg,
             scale: 2,
             columns: 5,
             rows: 15,
