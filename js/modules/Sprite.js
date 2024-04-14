@@ -2,7 +2,7 @@ const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
 
 class Sprite {
-    constructor ({ position, imageSrc, scale = 1, columns = 1, rows = 1, row = 0, maxFrames = 1, offset = {x: 0, y: 0}, framesCurrent = 0 }) {
+    constructor ({ position, imageSrc, scale = 1, columns = 1, rows = 1, row = 0, maxFrames = 1, imageWidth, offset = {x: 0, y: 0}, framesCurrent = 0 }) {
         this.position = position
         this.image = new Image()
         this.image.src = imageSrc
@@ -11,6 +11,7 @@ class Sprite {
         this.rows = rows
         this.row = row
         this.maxFrames = maxFrames
+        this.imageWidth = imageWidth || this.image.width
         this.framesCurrent = framesCurrent
         this.framesElapsed = 0
         this.framesHold = 5

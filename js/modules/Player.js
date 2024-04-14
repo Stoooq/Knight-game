@@ -1,4 +1,4 @@
-import { SPRITES, STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk } from "./PlayerState.js"
+import { SPRITES, STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk, Attack } from "./PlayerState.js"
 import Sprite from "./Sprite.js"
 
 const canvas = document.querySelector('canvas')
@@ -25,9 +25,10 @@ class Player extends Sprite {
 
         //Player state and sprite properties
         this.state = null
-        this.states = [new Idle(this), new Running(this), new Jump(this), new Fall(this), new Crouch(this), new CrouchWalk(this)]
+        this.states = [new Idle(this), new Running(this), new Jump(this), new Fall(this), new Crouch(this), new CrouchWalk(this), new Attack(this)]
         this.setState(STATES.IDLE)
         this.setSprite(SPRITES.IDLE)
+        this.previousState
 
         //Player parameters
         this.onGround = false
@@ -40,12 +41,30 @@ class Player extends Sprite {
         this.attackBox = {
             position: {
                 x: this.position.x,
-                y: this.position.x,
+                y: this.position.y,
             },
             offset: attackBox.offset,
             width: attackBox.width,
             height: attackBox.height
         }
+
+        //Player health bar
+        this.healthBar = new Sprite({
+            position: {
+                x: this.position.x,
+                y: this.position.y
+            },
+            imageSrc: '../assets/Pixel UI pack 3/06.png',
+            scale: 2,
+            columns: 5,
+            rows: 15,
+            row: 3,
+            maxFrames: 1,
+            offset: {
+                x: 10,
+                y: 40
+            }
+        })
     }
 
     update = ({ keys, gameWidth, gameHeight }) => {
@@ -54,8 +73,15 @@ class Player extends Sprite {
         this.animateFrames()
         this.moving(gameWidth)
 
-        c.fillStyle = 'red'
-        // c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+        this.healthBar.draw()
+        this.healthBar.animateFrames()
+        this.healthBar.position.x = this.position.x
+        this.healthBar.position.y = this.position.y
+
+        if (this.attacking) {
+            c.fillStyle = 'red'
+            // c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+        }
         this.attackBox.position.x = this.position.x
         this.attackBox.position.y = this.position.y
     }
@@ -66,23 +92,17 @@ class Player extends Sprite {
     // }
 
     setState = (state) => {
+        this.previousState = this.state
         this.state = this.states[state]
     }
 
     setSprite = (sprite) => {
-        // this.framesCurrent = 0
         this.image.src = sprite.imageSrc
         this.columns = sprite.columns
         this.maxFrames = sprite.maxFrames
     }
 
     moving = (gameWidth) => {
-        if (this.onGround) {
-        }
-        if (!this.onGround) {
-            // this.gravity = 0.5
-        }
-        console.log(this.stopped);
         if (!this.stopped) {
             this.position.x += this.velocity.x
         }
@@ -117,6 +137,13 @@ class Player extends Sprite {
             this.position.x = 0
         }
         this.stopped = false
+    }
+
+    attack = () => {
+        this.attacking = true
+        setTimeout(() => {
+            this.attacking = false
+        }, 100)
     }
 }
 

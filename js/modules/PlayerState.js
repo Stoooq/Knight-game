@@ -35,6 +35,11 @@ const SPRITES = {
         imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_CrouchWalk.png',
         columns: 8,
         maxFrames: 8
+    },
+    ATTACK: {
+        imageSrc: '../assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Attack.png',
+        columns: 4,
+        maxFrames: 4
     }
 }
 
@@ -45,6 +50,7 @@ const STATES = {
     FALL: 3,
     CROUCH: 4,
     CROUCHWALK: 5,
+    ATTACK: 6
 }
 
 class State {
@@ -79,6 +85,9 @@ class Idle extends State {
         }
         if (keys.includes('ArrowDown')) {
             this.player.setState(STATES.CROUCH)
+        }
+        if (keys.includes('Space')) {
+            this.player.setState(STATES.ATTACK)
         }
     }
 }
@@ -224,4 +233,24 @@ class CrouchWalk extends State {
     }
 }
 
-export { SPRITES ,STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk }
+class Attack extends State {
+    constructor (player) {
+        super ({
+            player,
+            state: 'ATTACK'
+        })
+    }
+
+    input = (keys) => {
+        if (keys.includes('Space')) {
+            this.player.setState(STATES.ATTACK)
+            this.player.setSprite(SPRITES.ATTACK)
+            this.player.attack()
+        }
+        if (keys.length === 0 && this.player.framesCurrent >= this.player.maxFrames - 1) {
+            this.player.setState(STATES.IDLE)
+        }
+    }
+}
+
+export { SPRITES ,STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk, Attack }

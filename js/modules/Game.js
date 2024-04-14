@@ -2,8 +2,9 @@ import Player from "./Player.js";
 import Input from "./Input.js";
 import Background from "./Background.js";
 import CollisionBlock from "./CollisionBlock.js";
-import { arrayParse2D, checkPlayerCollision } from "../utils.js";
+import { arrayParse2D, checkPlayerCollision, checkPlayerEnemyPosition } from "../utils.js";
 import { collisions } from "../data/collisions.js"
+import Enemy from "./Enemy.js";
 
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
@@ -52,16 +53,40 @@ class Game {
                 }
             })
         })
+        this.enemy = new Enemy({
+            position: {
+                x: 300,
+                y: 200
+            },
+            velocity: {
+                x: 0,
+                y: 0
+            },
+            width: 75,
+            height: 45,
+            imageSrc: '../assets/Slime/slime-Sheet.png',
+            scale: 3,
+            columns: 8,
+            rows: 3,
+            maxFrames: 8,
+            offset: {
+                x: 10,
+                y: 26
+            }
+        })
     }
 
     update = () => {
         checkPlayerCollision(this.player, this.collisionBlocks)
+        checkPlayerCollision(this.enemy, this.collisionBlocks)
+        checkPlayerEnemyPosition(this.player, this.enemy)
         this.background.update(this.player, this.width, this.collisionBlocks)
         this.player.update({
             keys: this.input.keys,
             gameWidth: this.width,
             gameHeight: this.height
         })
+        this.enemy.update()
         this.collisionBlocks.forEach(block => {
             block.draw()
         })
