@@ -1,0 +1,73 @@
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-image: url('/assets/oak_woods_v1.0/background/background_layer_1.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    // backdrop-filter: blur(5px);
+}
+
+.game-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-direction: column;
+    // background-color: #333;
+    width: 1024px;
+    height: 768px;
+    background-image: url('/assets/paperMap.png');
+    image-rendering: pixelated;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position-y: 100%;
+
+    .canvas {
+        width: 1024px;
+        height: 768px;
+        // background-color: red;
+    }
+
+    .keys-container {
+        display: flex;
+        margin: 20px;
+        width: 800px;
+        height: 128px;
+        background-color: yellow;
+
+        .arrows {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            width: 192px;
+            height: 128px;
+            background-color: orange;
+            
+            .arrowUp {
+                width: 192px;
+                height: 64px;
+                background-color: blue;
+            }
+    
+            .arrowLeft,
+            .arrowDown,
+            .arrowRight {
+                width: 64px;
+                height: 64px;
+            }
+    
+            .arrowDown {
+                background-color: purple;
+            }
+        }
+
+    }
+}

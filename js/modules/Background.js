@@ -28,12 +28,12 @@ class Background {
     }
 
     update = (player, gameWidth, collisionBlocks) => {
-        this.draw(player.position.x, player.state, player.fictionPosition, player.width, gameWidth, collisionBlocks, player.velocity.x)
+        this.draw(player.position.x, player.state, player.fictionPosition, player.width, gameWidth, collisionBlocks, player.velocity.x, player.stopped)
     }
 
-    draw = (pPosX, pState, pFicPosX, pWidth, gameWidth, collisionBlocks, pVelX) => {
+    draw = (pPosX, pState, pFicPosX, pWidth, gameWidth, collisionBlocks, pVelX, pStop) => {
         // const gameImages = Math.round(gameWidth / canvas.width)
-        if (pPosX === 0.8 * canvas.width - pWidth && (pState.state !== 'IDLE' || pState.state !== 'CROUCH')) {
+        if (pPosX === 0.8 * canvas.width - pWidth && (pState.state !== 'IDLE' || pState.state !== 'CROUCH') && !pStop) {
             this.positionX1 = -pPosX + 0.8 * canvas.width - pWidth - 0.2 * pFicPosX
             this.positionX2 = -pPosX + 0.8 * canvas.width - pWidth - 0.5 * pFicPosX
             this.positionX3 = -pPosX + 0.8 * canvas.width - pWidth - 0.8 * pFicPosX
@@ -42,7 +42,7 @@ class Background {
                 block.position.x = block.position.x - pVelX
             })
         }
-        if (pPosX === 0.2 * canvas.width && (pState.state !== 'IDLE' || pState.state !== 'CROUCH')) {
+        if (pPosX === 0.2 * canvas.width && (pState.state !== 'IDLE' || pState.state !== 'CROUCH') && !pStop) {
             this.positionX1 = -pPosX + 0.2 * canvas.width - 0.2 * pFicPosX
             this.positionX2 = -pPosX + 0.2 * canvas.width - 0.5 * pFicPosX
             this.positionX3 = -pPosX + 0.2 * canvas.width - 0.8 * pFicPosX
@@ -58,12 +58,12 @@ class Background {
         //         cos += i * canvas.width
         //     }
         // }
-        c.drawImage(this.image1, this.positionX1, 0, canvas.width, canvas.height)
-        c.drawImage(this.image1, this.positionX1 + canvas.width, 0, canvas.width, canvas.height)
-        c.drawImage(this.image2, this.positionX2, 0, canvas.width, canvas.height)
-        c.drawImage(this.image2, this.positionX2 + canvas.width, 0, canvas.width, canvas.height)
-        c.drawImage(this.image3, this.positionX3, 0, canvas.width, canvas.height)
-        c.drawImage(this.image3, this.positionX3 + canvas.width, 0, canvas.width, canvas.height)
+        c.drawImage(this.image1, this.positionX1, 0, canvas.width, 576)
+        c.drawImage(this.image1, this.positionX1 + canvas.width, 0, canvas.width, 576)
+        c.drawImage(this.image2, this.positionX2, 0, canvas.width, 576)
+        c.drawImage(this.image2, this.positionX2 + canvas.width, 0, canvas.width, 576)
+        c.drawImage(this.image3, this.positionX3, 0, canvas.width, 576)
+        c.drawImage(this.image3, this.positionX3 + canvas.width, 0, canvas.width, 576)
         c.drawImage(this.image4, this.positionX4, 0, 3072, 576)
     }
 }

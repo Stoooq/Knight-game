@@ -1,0 +1,67 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-image: url("background_layer_1.ecfd8cc7.png");
+  background-repeat: no-repeat;
+  background-size: cover;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  display: flex;
+  position: relative;
+}
+
+.game-container {
+  image-rendering: pixelated;
+  background-image: url("paperMap.3ae541ed.png");
+  background-position-y: 100%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 1024px;
+  height: 768px;
+  display: flex;
+}
+
+.game-container .canvas {
+  width: 1024px;
+  height: 768px;
+}
+
+.game-container .keys-container {
+  background-color: #ff0;
+  width: 800px;
+  height: 128px;
+  margin: 20px;
+  display: flex;
+}
+
+.game-container .keys-container .arrows {
+  background-color: orange;
+  flex-flow: wrap;
+  width: 192px;
+  height: 128px;
+  display: flex;
+}
+
+.game-container .keys-container .arrows .arrowUp {
+  background-color: #00f;
+  width: 192px;
+  height: 64px;
+}
+
+.game-container .keys-container .arrows .arrowLeft, .game-container .keys-container .arrows .arrowDown, .game-container .keys-container .arrows .arrowRight {
+  width: 64px;
+  height: 64px;
+}
+
+.game-container .keys-container .arrows .arrowDown {
+  background-color: purple;
+}
+/*# sourceMappingURL=index.b2625c6b.css.map */

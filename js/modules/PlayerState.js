@@ -1,10 +1,11 @@
-import idle from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Idle.png'
-import run from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Run.png'
-import jump from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Jump.png'
-import fall from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Fall.png'
-import crouch from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Crouch.png'
-import crouchWalk from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_CrouchWalk.png'
-import attack from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Attack.png'
+import idle from '/assets/knight/_Idle.png'
+import run from '/assets/knight/_Run.png'
+import jump from '/assets/knight/_Jump.png'
+import fall from '/assets/knight/_Fall.png'
+import crouch from '/assets/knight/_Crouch.png'
+import crouchWalk from '/assets/knight/_CrouchWalk.png'
+import slide from '/assets/knight/_Slide.png'
+import attack from '/assets/knight/_Attack.png'
 
 const SPRITES = {
     IDLE: {
@@ -44,6 +45,11 @@ const SPRITES = {
         columns: 8,
         maxFrames: 8
     },
+    SLIDE: {
+        imageSrc: slide,
+        columns: 2,
+        maxFrames: 2
+    },
     ATTACK: {
         imageSrc: attack,
         columns: 4,
@@ -58,7 +64,8 @@ const STATES = {
     FALL: 3,
     CROUCH: 4,
     CROUCHWALK: 5,
-    ATTACK: 6
+    SLIDE: 6,
+    ATTACK: 7
 }
 
 class State {
@@ -82,6 +89,7 @@ class Idle extends State {
             this.player.setSprite(SPRITES.IDLE)
             this.player.velocity.x = 0
             this.player.crouching = false
+            // this.player.stopped = false
         }
         if (keys.includes('ArrowRight')) {
             this.player.setState(STATES.RUNNING)
@@ -127,6 +135,9 @@ class Running extends State {
         }
         if (keys.includes('ArrowUp') && this.player.onGround) {
             this.player.setState(STATES.JUMP)
+        }
+        if (keys.includes('ArrowDown') && this.player.onGround) {
+            this.player.setState(STATES.SLIDE)
         }
     }
 }
@@ -242,6 +253,33 @@ class CrouchWalk extends State {
     }
 }
 
+class Slide extends State {
+    constructor (player) {
+        super ({
+            player,
+            state: 'SLIDE'
+        })
+    }
+
+    input = (keys) => {
+        if (keys.includes('ArrowDown')) {
+            this.player.setState(STATES.SLIDE)
+            this.player.setSprite(SPRITES.SLIDE)
+            this.player.velocity.x = 10
+        }
+        if (keys.includes('ArrowRight') && keys.includes('ArrowDown')) { 
+            this.player.setState(STATES.SLIDE)
+            this.player.velocity.x -= 1
+        }
+        if (keys.includes('ArrowLeft') && keys.includes('ArrowDown')) { 
+            this.player.setState(STATES.SLIDE)
+        }
+        if (!keys.includes('ArrowDown')) { 
+            this.player.setState(STATES.IDLE)
+        }
+    }
+}
+
 class Attack extends State {
     constructor (player) {
         super ({
@@ -255,6 +293,7 @@ class Attack extends State {
             this.player.setState(STATES.ATTACK)
             this.player.setSprite(SPRITES.ATTACK)
             this.player.attack()
+            this.player.takeDamage()
         }
         if (keys.length === 0 && this.player.framesCurrent >= this.player.maxFrames - 1) {
             this.player.setState(STATES.IDLE)
@@ -262,4 +301,4 @@ class Attack extends State {
     }
 }
 
-export { SPRITES ,STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk, Attack }
+export { SPRITES ,STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk, Slide, Attack }

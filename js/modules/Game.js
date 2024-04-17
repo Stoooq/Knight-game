@@ -5,8 +5,9 @@ import CollisionBlock from "./CollisionBlock.js";
 import { arrayParse2D, checkPlayerCollision, checkPlayerEnemyPosition } from "../utils.js";
 import { collisions } from "../data/collisions.js"
 import Enemy from "./Enemy.js";
-import playerImg from '/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Idle.png'
-import enemyImg from '/assets/Slime/slime-Sheet.png'
+import playerImg from '/assets/knight/_Idle.png'
+import enemyImg from '/assets/slime/slimeIdle.png'
+import RenderKeys from "./RenderKeys.js";
 
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
@@ -69,12 +70,19 @@ class Game {
             imageSrc: enemyImg,
             scale: 3,
             columns: 8,
-            rows: 3,
             maxFrames: 8,
             offset: {
                 x: 10,
                 y: 26
             }
+        })
+        this.renderKeys = new RenderKeys({
+            position: {
+                x: 0,
+                y: 576
+            },
+            width: 1024,
+            height: 144
         })
     }
 
@@ -88,10 +96,11 @@ class Game {
             gameWidth: this.width,
             gameHeight: this.height
         })
-        this.enemy.update()
+        this.enemy.update(this.player)
         this.collisionBlocks.forEach(block => {
             block.draw()
         })
+        this.renderKeys.update(this.input.keys)
     }
 }
 

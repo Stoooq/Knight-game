@@ -24,8 +24,8 @@ const checkPlayerCollision = (player, collisionBlocks) => {
                 player.onGround = true
         }
         //left && right
-        if (player.position.x + player.velocity.x < block.position.x + block.width &&
-            player.position.x + player.width + player.velocity.x > block.position.x &&
+        if (player.position.x + player.velocity.x <= block.position.x + block.width &&
+            player.position.x + player.width + player.velocity.x >= block.position.x &&
             player.position.y < block.position.y + block.height &&
             player.height + player.position.y > block.position.y) {
                 player.velocity.x = 0
@@ -58,7 +58,7 @@ const checkPlayerEnemyPosition = (player, enemy) => {
         player.position.x + player.width * 0.6 > enemy.position.x &&
         enemy.onGround) {
         enemy.onGround = false
-        enemy.velocity.y = -10
+        enemy.velocity.y = -15
     }
 }
 

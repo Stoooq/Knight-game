@@ -590,15 +590,15 @@ var _gameJsDefault = parcelHelpers.interopDefault(_gameJs);
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 canvas.width = 1024;
-canvas.height = 576;
+canvas.height = 768;
 const game = new (0, _gameJsDefault.default)({
     width: 2 * canvas.width,
     height: canvas.height
 });
 const update = ()=>{
     requestAnimationFrame(update);
-    c.fillStyle = "black";
-    c.fillRect(0, 0, canvas.width, canvas.height);
+    // c.fillStyle = 'black'
+    // c.fillRect(0, 0, canvas.width, canvas.height)
     game.update();
 };
 update();
@@ -618,10 +618,12 @@ var _utilsJs = require("../utils.js");
 var _collisionsJs = require("../data/collisions.js");
 var _enemyJs = require("./Enemy.js");
 var _enemyJsDefault = parcelHelpers.interopDefault(_enemyJs);
-var _idlePng = require("/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Idle.png");
+var _idlePng = require("/assets/knight/_Idle.png");
 var _idlePngDefault = parcelHelpers.interopDefault(_idlePng);
-var _slimeSheetPng = require("/assets/Slime/slime-Sheet.png");
-var _slimeSheetPngDefault = parcelHelpers.interopDefault(_slimeSheetPng);
+var _slimeIdlePng = require("/assets/slime/slimeIdle.png");
+var _slimeIdlePngDefault = parcelHelpers.interopDefault(_slimeIdlePng);
+var _renderKeysJs = require("./RenderKeys.js");
+var _renderKeysJsDefault = parcelHelpers.interopDefault(_renderKeysJs);
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 class Game {
@@ -677,15 +679,22 @@ class Game {
             },
             width: 75,
             height: 45,
-            imageSrc: (0, _slimeSheetPngDefault.default),
+            imageSrc: (0, _slimeIdlePngDefault.default),
             scale: 3,
             columns: 8,
-            rows: 3,
             maxFrames: 8,
             offset: {
                 x: 10,
                 y: 26
             }
+        });
+        this.renderKeys = new (0, _renderKeysJsDefault.default)({
+            position: {
+                x: 0,
+                y: 576
+            },
+            width: 1024,
+            height: 144
         });
     }
     update = ()=>{
@@ -698,22 +707,23 @@ class Game {
             gameWidth: this.width,
             gameHeight: this.height
         });
-        this.enemy.update();
+        this.enemy.update(this.player);
         this.collisionBlocks.forEach((block)=>{
             block.draw();
         });
+        this.renderKeys.update(this.input.keys);
     };
 }
 exports.default = Game;
 
-},{"./Player.js":"jeEdv","./Input.js":"5Wqde","./Background.js":"jTKBN","./CollisionBlock.js":"hHCv3","../utils.js":"eYK4L","../data/collisions.js":"2ScF8","./Enemy.js":"cIxND","/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Idle.png":"dccWM","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/assets/Slime/slime-Sheet.png":"fCydf"}],"jeEdv":[function(require,module,exports) {
+},{"./Player.js":"jeEdv","./Input.js":"5Wqde","./Background.js":"jTKBN","./CollisionBlock.js":"hHCv3","../utils.js":"eYK4L","../data/collisions.js":"2ScF8","./Enemy.js":"cIxND","/assets/knight/_Idle.png":"4ZX7k","/assets/slime/slimeIdle.png":"h26he","./RenderKeys.js":"8C1LK","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"jeEdv":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _playerStateJs = require("./PlayerState.js");
 var _spriteJs = require("./Sprite.js");
 var _spriteJsDefault = parcelHelpers.interopDefault(_spriteJs);
-var _06Png = require("/assets/Pixel UI pack 3/06.png");
-var _06PngDefault = parcelHelpers.interopDefault(_06Png);
+var _greyHealthBarPng = require("/assets/healthBar/greyHealthBar.png");
+var _greyHealthBarPngDefault = parcelHelpers.interopDefault(_greyHealthBarPng);
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 class Player extends (0, _spriteJsDefault.default) {
@@ -734,7 +744,6 @@ class Player extends (0, _spriteJsDefault.default) {
             offset
         });
         //Player properties
-        // this.position = position
         this.velocity = velocity;
         this.width = width;
         this.height = height;
@@ -749,6 +758,7 @@ class Player extends (0, _spriteJsDefault.default) {
             new (0, _playerStateJs.Fall)(this),
             new (0, _playerStateJs.Crouch)(this),
             new (0, _playerStateJs.CrouchWalk)(this),
+            new (0, _playerStateJs.Slide)(this),
             new (0, _playerStateJs.Attack)(this)
         ];
         this.setState((0, _playerStateJs.STATES).IDLE);
@@ -776,11 +786,9 @@ class Player extends (0, _spriteJsDefault.default) {
                 x: this.position.x,
                 y: this.position.y
             },
-            imageSrc: (0, _06PngDefault.default),
+            imageSrc: (0, _greyHealthBarPngDefault.default),
             scale: 2,
             columns: 5,
-            rows: 15,
-            row: 3,
             maxFrames: 1,
             offset: {
                 x: 10,
@@ -794,6 +802,7 @@ class Player extends (0, _spriteJsDefault.default) {
         this.draw();
         this.animateFrames();
         this.moving(gameWidth);
+        this.checkHealth();
         this.healthBar.draw();
         this.healthBar.animateFrames();
         this.healthBar.position.x = this.position.x;
@@ -819,11 +828,6 @@ class Player extends (0, _spriteJsDefault.default) {
         if (!this.stopped) this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
         this.velocity.y += this.gravity;
-        // if (this.position.y + this.height + this.velocity.y >= canvas.height) {
-        //     this.velocity.y = 0
-        //     this.onGround = true
-        // } else {
-        // }
         //Setting positions
         if (this.fictionPosition >= gameWidth) this.fictionPosition = gameWidth;
         if (this.fictionPosition <= 0) this.fictionPosition = 0;
@@ -845,10 +849,21 @@ class Player extends (0, _spriteJsDefault.default) {
             this.attacking = false;
         }, 100);
     };
+    takeDamage = ()=>{
+        setTimeout(()=>{
+            this.health -= 25;
+        }, 300);
+    };
+    checkHealth = ()=>{
+        if (this.health < 100) this.healthBar.framesCurrent = 1;
+        if (this.health < 75) this.healthBar.framesCurrent = 2;
+        if (this.health < 50) this.healthBar.framesCurrent = 3;
+        if (this.health < 25) this.healthBar.framesCurrent = 4;
+    };
 }
 exports.default = Player;
 
-},{"./PlayerState.js":"ep7HD","./Sprite.js":"9lzH1","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/assets/Pixel UI pack 3/06.png":"kJwYD"}],"ep7HD":[function(require,module,exports) {
+},{"./PlayerState.js":"ep7HD","./Sprite.js":"9lzH1","/assets/healthBar/greyHealthBar.png":"iMqBp","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"ep7HD":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "SPRITES", ()=>SPRITES);
@@ -859,20 +874,23 @@ parcelHelpers.export(exports, "Jump", ()=>Jump);
 parcelHelpers.export(exports, "Fall", ()=>Fall);
 parcelHelpers.export(exports, "Crouch", ()=>Crouch);
 parcelHelpers.export(exports, "CrouchWalk", ()=>CrouchWalk);
+parcelHelpers.export(exports, "Slide", ()=>Slide);
 parcelHelpers.export(exports, "Attack", ()=>Attack);
-var _idlePng = require("/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Idle.png");
+var _idlePng = require("/assets/knight/_Idle.png");
 var _idlePngDefault = parcelHelpers.interopDefault(_idlePng);
-var _runPng = require("/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Run.png");
+var _runPng = require("/assets/knight/_Run.png");
 var _runPngDefault = parcelHelpers.interopDefault(_runPng);
-var _jumpPng = require("/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Jump.png");
+var _jumpPng = require("/assets/knight/_Jump.png");
 var _jumpPngDefault = parcelHelpers.interopDefault(_jumpPng);
-var _fallPng = require("/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Fall.png");
+var _fallPng = require("/assets/knight/_Fall.png");
 var _fallPngDefault = parcelHelpers.interopDefault(_fallPng);
-var _crouchPng = require("/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Crouch.png");
+var _crouchPng = require("/assets/knight/_Crouch.png");
 var _crouchPngDefault = parcelHelpers.interopDefault(_crouchPng);
-var _crouchWalkPng = require("/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_CrouchWalk.png");
+var _crouchWalkPng = require("/assets/knight/_CrouchWalk.png");
 var _crouchWalkPngDefault = parcelHelpers.interopDefault(_crouchWalkPng);
-var _attackPng = require("/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Attack.png");
+var _slidePng = require("/assets/knight/_Slide.png");
+var _slidePngDefault = parcelHelpers.interopDefault(_slidePng);
+var _attackPng = require("/assets/knight/_Attack.png");
 var _attackPngDefault = parcelHelpers.interopDefault(_attackPng);
 const SPRITES = {
     IDLE: {
@@ -912,6 +930,11 @@ const SPRITES = {
         columns: 8,
         maxFrames: 8
     },
+    SLIDE: {
+        imageSrc: (0, _slidePngDefault.default),
+        columns: 2,
+        maxFrames: 2
+    },
     ATTACK: {
         imageSrc: (0, _attackPngDefault.default),
         columns: 4,
@@ -925,7 +948,8 @@ const STATES = {
     FALL: 3,
     CROUCH: 4,
     CROUCHWALK: 5,
-    ATTACK: 6
+    SLIDE: 6,
+    ATTACK: 7
 };
 class State {
     constructor({ player, state }){
@@ -946,6 +970,7 @@ class Idle extends State {
             this.player.setSprite(SPRITES.IDLE);
             this.player.velocity.x = 0;
             this.player.crouching = false;
+        // this.player.stopped = false
         }
         if (keys.includes("ArrowRight")) this.player.setState(STATES.RUNNING);
         if (keys.includes("ArrowLeft")) this.player.setState(STATES.RUNNING);
@@ -976,6 +1001,7 @@ class Running extends State {
         }
         if (keys.length === 0) this.player.setState(STATES.IDLE);
         if (keys.includes("ArrowUp") && this.player.onGround) this.player.setState(STATES.JUMP);
+        if (keys.includes("ArrowDown") && this.player.onGround) this.player.setState(STATES.SLIDE);
     };
 }
 class Jump extends State {
@@ -1057,6 +1083,27 @@ class CrouchWalk extends State {
         if (!keys.includes("ArrowDown")) this.player.setState(STATES.IDLE);
     };
 }
+class Slide extends State {
+    constructor(player){
+        super({
+            player,
+            state: "SLIDE"
+        });
+    }
+    input = (keys)=>{
+        if (keys.includes("ArrowDown")) {
+            this.player.setState(STATES.SLIDE);
+            this.player.setSprite(SPRITES.SLIDE);
+            this.player.velocity.x = 10;
+        }
+        if (keys.includes("ArrowRight") && keys.includes("ArrowDown")) {
+            this.player.setState(STATES.SLIDE);
+            this.player.velocity.x -= 1;
+        }
+        if (keys.includes("ArrowLeft") && keys.includes("ArrowDown")) this.player.setState(STATES.SLIDE);
+        if (!keys.includes("ArrowDown")) this.player.setState(STATES.IDLE);
+    };
+}
 class Attack extends State {
     constructor(player){
         super({
@@ -1069,15 +1116,16 @@ class Attack extends State {
             this.player.setState(STATES.ATTACK);
             this.player.setSprite(SPRITES.ATTACK);
             this.player.attack();
+            this.player.takeDamage();
         }
         if (keys.length === 0 && this.player.framesCurrent >= this.player.maxFrames - 1) this.player.setState(STATES.IDLE);
     };
 }
 
-},{"/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Idle.png":"dccWM","/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Run.png":"hghj5","/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Jump.png":"2ILgA","/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Fall.png":"l5Zdd","/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Crouch.png":"1Md0l","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_CrouchWalk.png":"4kqym","/assets/FreeKnight_v1/Colour1/Outline/120x80_PNGSheets/_Attack.png":"c6fYk"}],"dccWM":[function(require,module,exports) {
-module.exports = require("282d3a84d149fa73").getBundleURL("ksUvU") + "_Idle.6e3920d1.png" + "?" + Date.now();
+},{"/assets/knight/_Idle.png":"4ZX7k","/assets/knight/_Run.png":"jVsQq","/assets/knight/_Jump.png":"gjPKo","/assets/knight/_Fall.png":"5BSCR","/assets/knight/_Crouch.png":"35ESi","/assets/knight/_CrouchWalk.png":"kj2F4","/assets/knight/_Slide.png":"2FXn6","/assets/knight/_Attack.png":"ltDV1","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"4ZX7k":[function(require,module,exports) {
+module.exports = require("68b7f2e7e9d50903").getBundleURL("ksUvU") + "_Idle.e9e6cea5.png" + "?" + Date.now();
 
-},{"282d3a84d149fa73":"lgJ39"}],"lgJ39":[function(require,module,exports) {
+},{"68b7f2e7e9d50903":"lgJ39"}],"lgJ39":[function(require,module,exports) {
 "use strict";
 var bundleURL = {};
 function getBundleURLCached(id) {
@@ -1112,19 +1160,28 @@ exports.getBundleURL = getBundleURLCached;
 exports.getBaseURL = getBaseURL;
 exports.getOrigin = getOrigin;
 
-},{}],"hghj5":[function(require,module,exports) {
-module.exports = require("9af79e101605dd60").getBundleURL("ksUvU") + "_Run.e13df72f.png" + "?" + Date.now();
+},{}],"jVsQq":[function(require,module,exports) {
+module.exports = require("8f7409e922ef3a40").getBundleURL("ksUvU") + "_Run.5eeee929.png" + "?" + Date.now();
 
-},{"9af79e101605dd60":"lgJ39"}],"2ILgA":[function(require,module,exports) {
-module.exports = require("5204f82c2660f03e").getBundleURL("ksUvU") + "_Jump.84b817a8.png" + "?" + Date.now();
+},{"8f7409e922ef3a40":"lgJ39"}],"gjPKo":[function(require,module,exports) {
+module.exports = require("b996e69d3297a4db").getBundleURL("ksUvU") + "_Jump.33474a0d.png" + "?" + Date.now();
 
-},{"5204f82c2660f03e":"lgJ39"}],"l5Zdd":[function(require,module,exports) {
-module.exports = require("10e4f7c4b6b0ce64").getBundleURL("ksUvU") + "_Fall.9f6740d5.png" + "?" + Date.now();
+},{"b996e69d3297a4db":"lgJ39"}],"5BSCR":[function(require,module,exports) {
+module.exports = require("d4ec492cc4e10520").getBundleURL("ksUvU") + "_Fall.60f19203.png" + "?" + Date.now();
 
-},{"10e4f7c4b6b0ce64":"lgJ39"}],"1Md0l":[function(require,module,exports) {
-module.exports = require("570894e3ac627858").getBundleURL("ksUvU") + "_Crouch.1bbe434d.png" + "?" + Date.now();
+},{"d4ec492cc4e10520":"lgJ39"}],"35ESi":[function(require,module,exports) {
+module.exports = require("e44c411c5b6d1ad").getBundleURL("ksUvU") + "_Crouch.dc6ff41d.png" + "?" + Date.now();
 
-},{"570894e3ac627858":"lgJ39"}],"gkKU3":[function(require,module,exports) {
+},{"e44c411c5b6d1ad":"lgJ39"}],"kj2F4":[function(require,module,exports) {
+module.exports = require("d4e58e2d89c229a1").getBundleURL("ksUvU") + "_CrouchWalk.076f587c.png" + "?" + Date.now();
+
+},{"d4e58e2d89c229a1":"lgJ39"}],"2FXn6":[function(require,module,exports) {
+module.exports = require("d46846576fba05b7").getBundleURL("ksUvU") + "_Slide.89906024.png" + "?" + Date.now();
+
+},{"d46846576fba05b7":"lgJ39"}],"ltDV1":[function(require,module,exports) {
+module.exports = require("f26f0ebf712f5a40").getBundleURL("ksUvU") + "_Attack.84fc777d.png" + "?" + Date.now();
+
+},{"f26f0ebf712f5a40":"lgJ39"}],"gkKU3":[function(require,module,exports) {
 exports.interopDefault = function(a) {
     return a && a.__esModule ? a : {
         default: a
@@ -1154,13 +1211,7 @@ exports.export = function(dest, destName, get) {
     });
 };
 
-},{}],"4kqym":[function(require,module,exports) {
-module.exports = require("c3d1f90a22c96b1e").getBundleURL("ksUvU") + "_CrouchWalk.58db080c.png" + "?" + Date.now();
-
-},{"c3d1f90a22c96b1e":"lgJ39"}],"c6fYk":[function(require,module,exports) {
-module.exports = require("5d4123f7f7e7ac43").getBundleURL("ksUvU") + "_Attack.013f1b57.png" + "?" + Date.now();
-
-},{"5d4123f7f7e7ac43":"lgJ39"}],"9lzH1":[function(require,module,exports) {
+},{}],"9lzH1":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 const canvas = document.querySelector("canvas");
@@ -1201,10 +1252,10 @@ class Sprite {
 }
 exports.default = Sprite;
 
-},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"kJwYD":[function(require,module,exports) {
-module.exports = require("477a895ab0eeab94").getBundleURL("ksUvU") + "06.ccb90c00.png" + "?" + Date.now();
+},{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"iMqBp":[function(require,module,exports) {
+module.exports = require("7178e91d0d30b0ba").getBundleURL("ksUvU") + "greyHealthBar.e85e5f7a.png" + "?" + Date.now();
 
-},{"477a895ab0eeab94":"lgJ39"}],"5Wqde":[function(require,module,exports) {
+},{"7178e91d0d30b0ba":"lgJ39"}],"5Wqde":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 class Input {
@@ -1274,11 +1325,11 @@ class Background {
         c.imageSmoothingEnabled = false;
     }
     update = (player, gameWidth, collisionBlocks)=>{
-        this.draw(player.position.x, player.state, player.fictionPosition, player.width, gameWidth, collisionBlocks, player.velocity.x);
+        this.draw(player.position.x, player.state, player.fictionPosition, player.width, gameWidth, collisionBlocks, player.velocity.x, player.stopped);
     };
-    draw = (pPosX, pState, pFicPosX, pWidth, gameWidth, collisionBlocks, pVelX)=>{
+    draw = (pPosX, pState, pFicPosX, pWidth, gameWidth, collisionBlocks, pVelX, pStop)=>{
         // const gameImages = Math.round(gameWidth / canvas.width)
-        if (pPosX === 0.8 * canvas.width - pWidth && (pState.state !== "IDLE" || pState.state !== "CROUCH")) {
+        if (pPosX === 0.8 * canvas.width - pWidth && (pState.state !== "IDLE" || pState.state !== "CROUCH") && !pStop) {
             this.positionX1 = -pPosX + 0.8 * canvas.width - pWidth - 0.2 * pFicPosX;
             this.positionX2 = -pPosX + 0.8 * canvas.width - pWidth - 0.5 * pFicPosX;
             this.positionX3 = -pPosX + 0.8 * canvas.width - pWidth - 0.8 * pFicPosX;
@@ -1287,7 +1338,7 @@ class Background {
                 block.position.x = block.position.x - pVelX;
             });
         }
-        if (pPosX === 0.2 * canvas.width && (pState.state !== "IDLE" || pState.state !== "CROUCH")) {
+        if (pPosX === 0.2 * canvas.width && (pState.state !== "IDLE" || pState.state !== "CROUCH") && !pStop) {
             this.positionX1 = -pPosX + 0.2 * canvas.width - 0.2 * pFicPosX;
             this.positionX2 = -pPosX + 0.2 * canvas.width - 0.5 * pFicPosX;
             this.positionX3 = -pPosX + 0.2 * canvas.width - 0.8 * pFicPosX;
@@ -1302,18 +1353,18 @@ class Background {
         //         cos += i * canvas.width
         //     }
         // }
-        c.drawImage(this.image1, this.positionX1, 0, canvas.width, canvas.height);
-        c.drawImage(this.image1, this.positionX1 + canvas.width, 0, canvas.width, canvas.height);
-        c.drawImage(this.image2, this.positionX2, 0, canvas.width, canvas.height);
-        c.drawImage(this.image2, this.positionX2 + canvas.width, 0, canvas.width, canvas.height);
-        c.drawImage(this.image3, this.positionX3, 0, canvas.width, canvas.height);
-        c.drawImage(this.image3, this.positionX3 + canvas.width, 0, canvas.width, canvas.height);
+        c.drawImage(this.image1, this.positionX1, 0, canvas.width, 576);
+        c.drawImage(this.image1, this.positionX1 + canvas.width, 0, canvas.width, 576);
+        c.drawImage(this.image2, this.positionX2, 0, canvas.width, 576);
+        c.drawImage(this.image2, this.positionX2 + canvas.width, 0, canvas.width, 576);
+        c.drawImage(this.image3, this.positionX3, 0, canvas.width, 576);
+        c.drawImage(this.image3, this.positionX3 + canvas.width, 0, canvas.width, 576);
         c.drawImage(this.image4, this.positionX4, 0, 3072, 576);
     };
 }
 exports.default = Background;
 
-},{"/assets/oak_woods_v1.0/background/background_layer_1.png":"3BmuG","/assets/oak_woods_v1.0/background/background_layer_2.png":"38Fl3","/assets/oak_woods_v1.0/background/background_layer_3.png":"6jIh7","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/assets/newmap.png":"4PJv6"}],"3BmuG":[function(require,module,exports) {
+},{"/assets/oak_woods_v1.0/background/background_layer_1.png":"3BmuG","/assets/oak_woods_v1.0/background/background_layer_2.png":"38Fl3","/assets/oak_woods_v1.0/background/background_layer_3.png":"6jIh7","/assets/newmap.png":"4PJv6","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"3BmuG":[function(require,module,exports) {
 module.exports = require("a20d70d47135f1fe").getBundleURL("ksUvU") + "background_layer_1.ecfd8cc7.png" + "?" + Date.now();
 
 },{"a20d70d47135f1fe":"lgJ39"}],"38Fl3":[function(require,module,exports) {
@@ -1369,7 +1420,7 @@ const checkPlayerCollision = (player, collisionBlocks)=>{
             player.onGround = true;
         }
         //left && right
-        if (player.position.x + player.velocity.x < block.position.x + block.width && player.position.x + player.width + player.velocity.x > block.position.x && player.position.y < block.position.y + block.height && player.height + player.position.y > block.position.y) {
+        if (player.position.x + player.velocity.x <= block.position.x + block.width && player.position.x + player.width + player.velocity.x >= block.position.x && player.position.y < block.position.y + block.height && player.height + player.position.y > block.position.y) {
             player.velocity.x = 0;
             player.stopped = true // nie zatrzymuje sie do konca
             ;
@@ -1387,7 +1438,7 @@ const checkPlayerEnemyPosition = (player, enemy)=>{
     if (player.position.x > enemy.position.x + enemy.width * 0.6) enemy.velocity.x = 1.5;
     if (player.position.y + player.height < enemy.position.y && player.position.x < enemy.position.x + enemy.width * 0.6 && player.position.x + player.width * 0.6 > enemy.position.x && enemy.onGround) {
         enemy.onGround = false;
-        enemy.velocity.y = -10;
+        enemy.velocity.y = -15;
     }
 };
 
@@ -1835,12 +1886,12 @@ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _spriteJs = require("./Sprite.js");
 var _spriteJsDefault = parcelHelpers.interopDefault(_spriteJs);
-var _06Png = require("/assets/Pixel UI pack 3/06.png");
-var _06PngDefault = parcelHelpers.interopDefault(_06Png);
+var _blueHealthBarPng = require("/assets/healthBar/blueHealthBar.png");
+var _blueHealthBarPngDefault = parcelHelpers.interopDefault(_blueHealthBarPng);
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 class Enemy extends (0, _spriteJsDefault.default) {
-    constructor({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, rows = 1, row = 0, maxFrames = 1, offset = {
+    constructor({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, maxFrames = 1, offset = {
         x: 0,
         y: 0
     } }){
@@ -1849,8 +1900,6 @@ class Enemy extends (0, _spriteJsDefault.default) {
             imageSrc,
             scale,
             columns,
-            rows,
-            row,
             maxFrames,
             offset
         });
@@ -1860,17 +1909,16 @@ class Enemy extends (0, _spriteJsDefault.default) {
         this.height = height;
         this.gravity = 0.5;
         this.onGround = false;
+        this.stopped = false;
         //Enemy health bar
         this.healthBar = new (0, _spriteJsDefault.default)({
             position: {
                 x: this.position.x,
                 y: this.position.y
             },
-            imageSrc: (0, _06PngDefault.default),
+            imageSrc: (0, _blueHealthBarPngDefault.default),
             scale: 2,
             columns: 5,
-            rows: 15,
-            row: 1,
             maxFrames: 1,
             offset: {
                 x: 10,
@@ -1878,30 +1926,198 @@ class Enemy extends (0, _spriteJsDefault.default) {
             }
         });
     }
-    update = ()=>{
+    update = (player)=>{
+        this.ddraw();
         this.draw();
         this.animateFrames();
-        this.moving();
+        this.moving(player.position.x, player.state, player.width, player.velocity.x, player.stopped);
         this.healthBar.draw();
         this.healthBar.animateFrames();
         this.healthBar.position.x = this.position.x;
         this.healthBar.position.y = this.position.y;
     };
-    // draw = () => {
-    //     c.fillStyle = 'green'
-    //     c.fillRect(this.position.x, this.position.y, this.width, this.height)
-    // }
-    moving = ()=>{
-        this.position.x += this.velocity.x;
+    ddraw = ()=>{
+        c.fillStyle = "green";
+        c.fillRect(this.position.x, this.position.y, this.width, this.height);
+    };
+    moving = (pPosX, pState, pWidth, pVelX, pStop)=>{
+        console.log(pStop);
+        if (pPosX === 0.8 * canvas.width - pWidth && (pState.state !== "IDLE" || pState.state !== "CROUCH") && !pStop) this.position.x = this.position.x - pVelX;
+        if (pPosX === 0.2 * canvas.width && (pState.state !== "IDLE" || pState.state !== "CROUCH") && !pStop) this.position.x = this.position.x - pVelX;
+        if (!this.stopped) this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
         this.velocity.y += this.gravity;
+        this.stopped = false;
     };
 }
 exports.default = Enemy;
 
-},{"./Sprite.js":"9lzH1","/assets/Pixel UI pack 3/06.png":"kJwYD","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"fCydf":[function(require,module,exports) {
-module.exports = require("d2b6e54441214b12").getBundleURL("ksUvU") + "slime-Sheet.21e39b52.png" + "?" + Date.now();
+},{"./Sprite.js":"9lzH1","/assets/healthBar/blueHealthBar.png":"lCoHq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"lCoHq":[function(require,module,exports) {
+module.exports = require("fc30d919ad8593c3").getBundleURL("ksUvU") + "blueHealthBar.50d99c2e.png" + "?" + Date.now();
 
-},{"d2b6e54441214b12":"lgJ39"}]},["fQFrJ","1Z4Rq"], "1Z4Rq", "parcelRequire1020")
+},{"fc30d919ad8593c3":"lgJ39"}],"h26he":[function(require,module,exports) {
+module.exports = require("2832f1231a4e616c").getBundleURL("ksUvU") + "slimeIdle.ff039d19.png" + "?" + Date.now();
+
+},{"2832f1231a4e616c":"lgJ39"}],"8C1LK":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+var _sprite = require("./Sprite");
+var _spriteDefault = parcelHelpers.interopDefault(_sprite);
+var _arrowUpPng = require("/assets/keys/arrowUp.png");
+var _arrowUpPngDefault = parcelHelpers.interopDefault(_arrowUpPng);
+var _arrowUpPressedPng = require("/assets/keys/arrowUpPressed.png");
+var _arrowUpPressedPngDefault = parcelHelpers.interopDefault(_arrowUpPressedPng);
+var _arrowLeftPng = require("/assets/keys/arrowLeft.png");
+var _arrowLeftPngDefault = parcelHelpers.interopDefault(_arrowLeftPng);
+var _arrowLeftPressedPng = require("/assets/keys/arrowLeftPressed.png");
+var _arrowLeftPressedPngDefault = parcelHelpers.interopDefault(_arrowLeftPressedPng);
+var _arrowDownPng = require("/assets/keys/arrowDown.png");
+var _arrowDownPngDefault = parcelHelpers.interopDefault(_arrowDownPng);
+var _arrowDownPressedPng = require("/assets/keys/arrowDownPressed.png");
+var _arrowDownPressedPngDefault = parcelHelpers.interopDefault(_arrowDownPressedPng);
+var _arrowRightPng = require("/assets/keys/arrowRight.png");
+var _arrowRightPngDefault = parcelHelpers.interopDefault(_arrowRightPng);
+var _arrowRightPressedPng = require("/assets/keys/arrowRightPressed.png");
+var _arrowRightPressedPngDefault = parcelHelpers.interopDefault(_arrowRightPressedPng);
+var _skillBoxPng = require("/assets/keys/skillBox.png");
+var _skillBoxPngDefault = parcelHelpers.interopDefault(_skillBoxPng);
+const canvas = document.querySelector("canvas");
+const c = canvas.getContext("2d");
+const margin = 32;
+class RenderKeys {
+    constructor({ position, width, height }){
+        this.position = position;
+        this.width = width;
+        this.height = height;
+        this.arrowUp = new (0, _spriteDefault.default)({
+            position: {
+                x: this.position.x + 64 + 3 * margin,
+                y: this.position.y + margin
+            },
+            width: 64,
+            height: 64,
+            imageSrc: (0, _arrowUpPngDefault.default),
+            scale: 4,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        });
+        this.arrowLeft = new (0, _spriteDefault.default)({
+            position: {
+                x: this.position.x + 3 * margin,
+                y: this.position.y + 32 + margin
+            },
+            width: 64,
+            height: 64,
+            imageSrc: (0, _arrowLeftPngDefault.default),
+            scale: 4,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        });
+        this.arrowDown = new (0, _spriteDefault.default)({
+            position: {
+                x: this.position.x + 64 + 3 * margin,
+                y: this.position.y + 64 + margin
+            },
+            width: 64,
+            height: 64,
+            imageSrc: (0, _arrowDownPngDefault.default),
+            scale: 4,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        });
+        this.arrowRight = new (0, _spriteDefault.default)({
+            position: {
+                x: this.position.x + 128 + 3 * margin,
+                y: this.position.y + 32 + margin
+            },
+            width: 64,
+            height: 64,
+            imageSrc: (0, _arrowRightPngDefault.default),
+            scale: 4,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        });
+        this.skillBox = new (0, _spriteDefault.default)({
+            position: {
+                x: this.position.x + 256 + 3 * margin,
+                y: this.position.y + 32 + margin
+            },
+            width: 128,
+            height: 64,
+            imageSrc: (0, _skillBoxPngDefault.default),
+            scale: 2,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        });
+    }
+    update = (keys)=>{
+        this.checkPressedKey(keys);
+        // this.ddraw()
+        this.arrowUp.draw();
+        this.arrowUp.animateFrames();
+        this.arrowLeft.draw();
+        this.arrowLeft.animateFrames();
+        this.arrowDown.draw();
+        this.arrowDown.animateFrames();
+        this.arrowRight.draw();
+        this.arrowRight.animateFrames();
+        this.skillBox.draw();
+        this.skillBox.animateFrames();
+    };
+    // ddraw = () => {
+    //     c.fillStyle = 'red'
+    //     c.fillRect(this.position.x, this.position.y, this.width, this.height)
+    // }
+    checkPressedKey = (keys)=>{
+        if (keys.includes("ArrowUp")) this.arrowUp.image.src = (0, _arrowUpPressedPngDefault.default);
+        else this.arrowUp.image.src = (0, _arrowUpPngDefault.default);
+        if (keys.includes("ArrowLeft")) this.arrowLeft.image.src = (0, _arrowLeftPressedPngDefault.default);
+        else this.arrowLeft.image.src = (0, _arrowLeftPngDefault.default);
+        if (keys.includes("ArrowDown")) this.arrowDown.image.src = (0, _arrowDownPressedPngDefault.default);
+        else this.arrowDown.image.src = (0, _arrowDownPngDefault.default);
+        if (keys.includes("ArrowRight")) this.arrowRight.image.src = (0, _arrowRightPressedPngDefault.default);
+        else this.arrowRight.image.src = (0, _arrowRightPngDefault.default);
+    };
+}
+exports.default = RenderKeys;
+
+},{"./Sprite":"9lzH1","/assets/keys/arrowUp.png":"5ZcCS","/assets/keys/arrowUpPressed.png":"ewwrp","/assets/keys/arrowLeft.png":"gnVQP","/assets/keys/arrowLeftPressed.png":"9VKJr","/assets/keys/arrowDown.png":"e5tQE","/assets/keys/arrowDownPressed.png":"39CkS","/assets/keys/arrowRight.png":"ar8Q2","/assets/keys/arrowRightPressed.png":"5WqrE","/assets/keys/skillBox.png":"lYe7Q","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"5ZcCS":[function(require,module,exports) {
+module.exports = require("e46a8565b83fbbde").getBundleURL("ksUvU") + "arrowUp.2db42674.png" + "?" + Date.now();
+
+},{"e46a8565b83fbbde":"lgJ39"}],"ewwrp":[function(require,module,exports) {
+module.exports = require("7271a65bf25df227").getBundleURL("ksUvU") + "arrowUpPressed.ab0b10f1.png" + "?" + Date.now();
+
+},{"7271a65bf25df227":"lgJ39"}],"gnVQP":[function(require,module,exports) {
+module.exports = require("113674650dc0277b").getBundleURL("ksUvU") + "arrowLeft.62e41a95.png" + "?" + Date.now();
+
+},{"113674650dc0277b":"lgJ39"}],"9VKJr":[function(require,module,exports) {
+module.exports = require("82d7c095ed5c783").getBundleURL("ksUvU") + "arrowLeftPressed.2ecd801d.png" + "?" + Date.now();
+
+},{"82d7c095ed5c783":"lgJ39"}],"e5tQE":[function(require,module,exports) {
+module.exports = require("d45cc9443abe269d").getBundleURL("ksUvU") + "arrowDown.a49341b2.png" + "?" + Date.now();
+
+},{"d45cc9443abe269d":"lgJ39"}],"39CkS":[function(require,module,exports) {
+module.exports = require("c6bde797ff6e20e5").getBundleURL("ksUvU") + "arrowDownPressed.e771f913.png" + "?" + Date.now();
+
+},{"c6bde797ff6e20e5":"lgJ39"}],"ar8Q2":[function(require,module,exports) {
+module.exports = require("39bcd54dc0a97ec7").getBundleURL("ksUvU") + "arrowRight.7517521a.png" + "?" + Date.now();
+
+},{"39bcd54dc0a97ec7":"lgJ39"}],"5WqrE":[function(require,module,exports) {
+module.exports = require("1317a5136b109d93").getBundleURL("ksUvU") + "arrowRightPressed.b3e0bc05.png" + "?" + Date.now();
+
+},{"1317a5136b109d93":"lgJ39"}],"lYe7Q":[function(require,module,exports) {
+module.exports = require("4020917efff96794").getBundleURL("ksUvU") + "skillBox.1759bb35.png" + "?" + Date.now();
+
+},{"4020917efff96794":"lgJ39"}]},["fQFrJ","1Z4Rq"], "1Z4Rq", "parcelRequire1020")
 
 //# sourceMappingURL=index.5d9dacde.js.map

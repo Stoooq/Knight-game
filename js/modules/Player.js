@@ -1,6 +1,6 @@
-import { SPRITES, STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk, Attack } from "./PlayerState.js"
+import { SPRITES, STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk, Slide, Attack } from "./PlayerState.js"
 import Sprite from "./Sprite.js"
-import healthBarImg from '/assets/Pixel UI pack 3/06.png'
+import healthBarImg from '/assets/healthBar/greyHealthBar.png'
 
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
@@ -17,7 +17,6 @@ class Player extends Sprite {
         })
 
         //Player properties
-        // this.position = position
         this.velocity = velocity
         this.width = width
         this.height = height
@@ -26,7 +25,7 @@ class Player extends Sprite {
 
         //Player state and sprite properties
         this.state = null
-        this.states = [new Idle(this), new Running(this), new Jump(this), new Fall(this), new Crouch(this), new CrouchWalk(this), new Attack(this)]
+        this.states = [new Idle(this), new Running(this), new Jump(this), new Fall(this), new Crouch(this), new CrouchWalk(this), new Slide(this), new Attack(this)]
         this.setState(STATES.IDLE)
         this.setSprite(SPRITES.IDLE)
         this.previousState
@@ -58,8 +57,6 @@ class Player extends Sprite {
             imageSrc: healthBarImg,
             scale: 2,
             columns: 5,
-            rows: 15,
-            row: 3,
             maxFrames: 1,
             offset: {
                 x: 10,
@@ -74,6 +71,7 @@ class Player extends Sprite {
         this.draw()
         this.animateFrames()
         this.moving(gameWidth)
+        this.checkHealth()
 
         this.healthBar.draw()
         this.healthBar.animateFrames()
@@ -110,12 +108,6 @@ class Player extends Sprite {
         }
         this.position.y += this.velocity.y
         this.velocity.y += this.gravity
-        
-        // if (this.position.y + this.height + this.velocity.y >= canvas.height) {
-        //     this.velocity.y = 0
-        //     this.onGround = true
-        // } else {
-        // }
 
         //Setting positions
         if (this.fictionPosition >= gameWidth) {
@@ -146,6 +138,28 @@ class Player extends Sprite {
         setTimeout(() => {
             this.attacking = false
         }, 100)
+    }
+
+    takeDamage = () => {
+        setTimeout(() => {
+            this.health -= 25
+        }, 300)
+        
+    }
+
+    checkHealth = () => {
+        if (this.health < 100) {
+            this.healthBar.framesCurrent = 1
+        }
+        if (this.health < 75) {
+            this.healthBar.framesCurrent = 2
+        }
+        if (this.health < 50) {
+            this.healthBar.framesCurrent = 3
+        }
+        if (this.health < 25) {
+            this.healthBar.framesCurrent = 4
+        }
     }
 }
 
