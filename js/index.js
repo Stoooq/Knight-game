@@ -5,16 +5,26 @@ const c = canvas.getContext('2d')
 canvas.width = 1024
 canvas.height = 768
 
+const fps = 20
+
+const fpsDelay = 1000/fps
+
+let time = 0
+
 const game = new Game({
     width: 2 * canvas.width,
     height: canvas.height
 })
 
-const update = () => {
+let prevTimeStamp = 0;
+
+const update = (timeStamp) => {
     requestAnimationFrame(update)
-    // c.fillStyle = 'black'
-    // c.fillRect(0, 0, canvas.width, canvas.height)
-    game.update()
+    
+    const timeStampDiff = timeStamp - prevTimeStamp || 0;
+    prevTimeStamp = timeStamp;
+    // console.log(timeStampDiff);
+    game.update(timeStampDiff)
 }
 
 update()

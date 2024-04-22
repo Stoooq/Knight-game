@@ -591,15 +591,20 @@ const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 canvas.width = 1024;
 canvas.height = 768;
+const fps = 20;
+const fpsDelay = 1000 / fps;
+let time = 0;
 const game = new (0, _gameJsDefault.default)({
     width: 2 * canvas.width,
     height: canvas.height
 });
-const update = ()=>{
+let prevTimeStamp = 0;
+const update = (timeStamp)=>{
     requestAnimationFrame(update);
-    // c.fillStyle = 'black'
-    // c.fillRect(0, 0, canvas.width, canvas.height)
-    game.update();
+    const timeStampDiff = timeStamp - prevTimeStamp || 0;
+    prevTimeStamp = timeStamp;
+    // console.log(timeStampDiff);
+    game.update(timeStampDiff);
 };
 update();
 
@@ -639,15 +644,11 @@ class Game {
                 x: 0,
                 y: 0
             },
-            width: 63,
-            height: 114,
+            width: 70,
+            height: 119,
             imageSrc: (0, _idlePngDefault.default),
             scale: 3,
-            maxFrames: 10,
-            offset: {
-                x: 132,
-                y: 125
-            }
+            maxFrames: 10
         });
         this.input = new (0, _inputJsDefault.default)();
         this.background = new (0, _backgroundJsDefault.default)({
@@ -677,16 +678,12 @@ class Game {
                 x: 0,
                 y: 0
             },
-            width: 75,
-            height: 45,
+            width: 70,
+            height: 35,
             imageSrc: (0, _slimeIdlePngDefault.default),
             scale: 3,
             columns: 8,
-            maxFrames: 8,
-            offset: {
-                x: 10,
-                y: 26
-            }
+            maxFrames: 8
         });
         this.renderKeys = new (0, _renderKeysJsDefault.default)({
             position: {
@@ -697,17 +694,37 @@ class Game {
             height: 144
         });
     }
-    update = ()=>{
+    checkPlayerCollision = ()=>{
         (0, _utilsJs.checkPlayerCollision)(this.player, this.collisionBlocks);
+        if ((0, _utilsJs.rectangularCollision)(this.player, this.enemy) && this.player.attacking && this.player.framesCurrent === 2) {
+            console.log("cos");
+            this.player.attacking = false;
+            this.enemy.takeDamage();
+        }
+    // let collision = checkPlayerCollision(this.player, this.collisionBlocks)
+    // switch (collision) {
+    //     case 1:
+    //         console.log('bottom');
+    //         break
+    // }
+    };
+    checkEnemyCollision = ()=>{
         (0, _utilsJs.checkPlayerCollision)(this.enemy, this.collisionBlocks);
         (0, _utilsJs.checkPlayerEnemyPosition)(this.player, this.enemy);
+    };
+    update = (time)=>{
         this.background.update(this.player, this.width, this.collisionBlocks);
         this.player.update({
             keys: this.input.keys,
             gameWidth: this.width,
-            gameHeight: this.height
+            gameHeight: this.height,
+            checkCollision: this.checkPlayerCollision,
+            time: time
         });
-        this.enemy.update(this.player);
+        // this.enemy.update({ 
+        //     player: this.player,
+        //     checkCollision: this.checkEnemyCollision
+        // })
         this.collisionBlocks.forEach((block)=>{
             block.draw();
         });
@@ -727,21 +744,17 @@ var _greyHealthBarPngDefault = parcelHelpers.interopDefault(_greyHealthBarPng);
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 class Player extends (0, _spriteJsDefault.default) {
-    constructor({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, maxFrames = 1, offset = {
-        x: 0,
-        y: 0
-    }, attackBox = {
+    constructor({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, maxFrames = 1, attackBox = {
         offset: {},
-        width: 100,
-        height: 50
+        width: 150,
+        height: 120
     } }){
         super({
             position,
             imageSrc,
             scale,
             columns,
-            maxFrames,
-            offset
+            maxFrames
         });
         //Player properties
         this.velocity = velocity;
@@ -759,7 +772,8 @@ class Player extends (0, _spriteJsDefault.default) {
             new (0, _playerStateJs.Crouch)(this),
             new (0, _playerStateJs.CrouchWalk)(this),
             new (0, _playerStateJs.Slide)(this),
-            new (0, _playerStateJs.Attack)(this)
+            new (0, _playerStateJs.Attack)(this),
+            new (0, _playerStateJs.AttackWalk)(this)
         ];
         this.setState((0, _playerStateJs.STATES).IDLE);
         this.setSprite((0, _playerStateJs.SPRITES).IDLE);
@@ -780,7 +794,7 @@ class Player extends (0, _spriteJsDefault.default) {
             width: attackBox.width,
             height: attackBox.height
         };
-        //Player health bar
+        // Player health bar
         this.healthBar = new (0, _spriteJsDefault.default)({
             position: {
                 x: this.position.x,
@@ -790,25 +804,25 @@ class Player extends (0, _spriteJsDefault.default) {
             scale: 2,
             columns: 5,
             maxFrames: 1,
-            offset: {
-                x: 10,
-                y: 40
-            }
+            width: 64
         });
     }
-    update = ({ keys, gameWidth, gameHeight })=>{
+    update = ({ keys, gameWidth, gameHeight, checkCollision, time })=>{
+        // console.log(this.state);
         this.state.input(keys);
+        this.state.update(time);
         this.ddraw();
-        this.draw();
         this.animateFrames();
+        this.draw();
+        checkCollision();
         this.moving(gameWidth);
         this.checkHealth();
-        this.healthBar.draw();
-        this.healthBar.animateFrames();
-        this.healthBar.position.x = this.position.x;
-        this.healthBar.position.y = this.position.y;
-        if (this.attacking) c.fillStyle = "red";
-        this.attackBox.position.x = this.position.x;
+        // this.healthBar.draw()
+        // this.healthBar.animateFrames()
+        // this.healthBar.position.x = this.position.x
+        // this.healthBar.position.y = this.position.y - 32
+        this.attacking;
+        this.direction === 1 ? this.attackBox.position.x = this.position.x + this.width / 2 : this.attackBox.position.x = this.position.x + this.width / 2 - this.attackBox.width;
         this.attackBox.position.y = this.position.y;
     };
     ddraw = ()=>{
@@ -818,6 +832,8 @@ class Player extends (0, _spriteJsDefault.default) {
     setState = (state)=>{
         this.previousState = this.state;
         this.state = this.states[state];
+        if (this.previousState !== this.state) this.framesCurrent = 0;
+    // this.state.reset()
     };
     setSprite = (sprite)=>{
         this.image.src = sprite.imageSrc;
@@ -828,6 +844,7 @@ class Player extends (0, _spriteJsDefault.default) {
         if (!this.stopped) this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
         this.velocity.y += this.gravity;
+        // console.log(this.fictionPosition, this.position.x);
         //Setting positions
         if (this.fictionPosition >= gameWidth) this.fictionPosition = gameWidth;
         if (this.fictionPosition <= 0) this.fictionPosition = 0;
@@ -842,17 +859,16 @@ class Player extends (0, _spriteJsDefault.default) {
         }
         if (this.position.x <= 0) this.position.x = 0;
         this.stopped = false;
+    // this.position.x = Math.round(this.position.x)
     };
     attack = ()=>{
         this.attacking = true;
-        setTimeout(()=>{
-            this.attacking = false;
-        }, 100);
+    // setTimeout(() => {
+    //     this.attacking = false
+    // }, 200)
     };
     takeDamage = ()=>{
-        setTimeout(()=>{
-            this.health -= 25;
-        }, 300);
+        this.health -= 25;
     };
     checkHealth = ()=>{
         if (this.health < 100) this.healthBar.framesCurrent = 1;
@@ -876,6 +892,7 @@ parcelHelpers.export(exports, "Crouch", ()=>Crouch);
 parcelHelpers.export(exports, "CrouchWalk", ()=>CrouchWalk);
 parcelHelpers.export(exports, "Slide", ()=>Slide);
 parcelHelpers.export(exports, "Attack", ()=>Attack);
+parcelHelpers.export(exports, "AttackWalk", ()=>AttackWalk);
 var _idlePng = require("/assets/knight/_Idle.png");
 var _idlePngDefault = parcelHelpers.interopDefault(_idlePng);
 var _runPng = require("/assets/knight/_Run.png");
@@ -890,8 +907,12 @@ var _crouchWalkPng = require("/assets/knight/_CrouchWalk.png");
 var _crouchWalkPngDefault = parcelHelpers.interopDefault(_crouchWalkPng);
 var _slidePng = require("/assets/knight/_Slide.png");
 var _slidePngDefault = parcelHelpers.interopDefault(_slidePng);
-var _attackPng = require("/assets/knight/_Attack.png");
-var _attackPngDefault = parcelHelpers.interopDefault(_attackPng);
+var _attackNoMovementPng = require("/assets/knight/_AttackNoMovement.png");
+var _attackNoMovementPngDefault = parcelHelpers.interopDefault(_attackNoMovementPng);
+var _attack2NoMovementPng = require("/assets/knight/_Attack2NoMovement.png");
+var _attack2NoMovementPngDefault = parcelHelpers.interopDefault(_attack2NoMovementPng);
+var _turnAroundPng = require("/assets/knight/_TurnAround.png");
+var _turnAroundPngDefault = parcelHelpers.interopDefault(_turnAroundPng);
 const SPRITES = {
     IDLE: {
         imageSrc: (0, _idlePngDefault.default),
@@ -936,9 +957,19 @@ const SPRITES = {
         maxFrames: 2
     },
     ATTACK: {
-        imageSrc: (0, _attackPngDefault.default),
+        imageSrc: (0, _attackNoMovementPngDefault.default),
         columns: 4,
         maxFrames: 4
+    },
+    ATTACKWALK: {
+        imageSrc: (0, _attack2NoMovementPngDefault.default),
+        columns: 6,
+        maxFrames: 6
+    },
+    CHANGEDIRECTION: {
+        imageSrc: (0, _turnAroundPngDefault.default),
+        columns: 3,
+        maxFrames: 3
     }
 };
 const STATES = {
@@ -949,13 +980,27 @@ const STATES = {
     CROUCH: 4,
     CROUCHWALK: 5,
     SLIDE: 6,
-    ATTACK: 7
+    ATTACK: 7,
+    ATTACKWALK: 8
 };
 class State {
     constructor({ player, state }){
         this.player = player;
         this.state = state;
+        this.fps = 15;
+        this.frame = 0;
+        this.timer = 0;
+        this.interval = 1000 / this.fps;
     }
+    update = (time)=>{
+        if (this.frame >= this.fps) this.frame = 0;
+        this.timer += time;
+        if (Math.round(this.timer / this.interval) > 1) {
+            this.timer = 0;
+            this.frame++;
+        }
+    // console.log(this.frame, time);
+    };
 }
 class Idle extends State {
     constructor(player){
@@ -970,13 +1015,14 @@ class Idle extends State {
             this.player.setSprite(SPRITES.IDLE);
             this.player.velocity.x = 0;
             this.player.crouching = false;
-        // this.player.stopped = false
+            this.player.onGround;
         }
         if (keys.includes("ArrowRight")) this.player.setState(STATES.RUNNING);
         if (keys.includes("ArrowLeft")) this.player.setState(STATES.RUNNING);
         if (keys.includes("ArrowUp") && this.player.onGround) this.player.setState(STATES.JUMP);
         if (keys.includes("ArrowDown")) this.player.setState(STATES.CROUCH);
-        if (keys.includes("Space")) this.player.setState(STATES.ATTACK);
+        if (keys.includes("Space")) this.player.setState(STATES.ATTACKWALK);
+        if (this.player.velocity.y > 1) this.player.setState(STATES.FALL);
     };
 }
 class Running extends State {
@@ -999,9 +1045,10 @@ class Running extends State {
             this.player.direction = -1;
             this.player.velocity.x = 5 * this.player.direction;
         }
-        if (keys.length === 0) this.player.setState(STATES.IDLE);
         if (keys.includes("ArrowUp") && this.player.onGround) this.player.setState(STATES.JUMP);
         if (keys.includes("ArrowDown") && this.player.onGround) this.player.setState(STATES.SLIDE);
+        if (keys.includes("Space")) this.player.setState(STATES.ATTACKWALK);
+        if (keys.length === 0) this.player.setState(STATES.IDLE);
     };
 }
 class Jump extends State {
@@ -1019,8 +1066,15 @@ class Jump extends State {
             this.player.onGround = false;
         }
         if (this.player.velocity.y > 0) this.player.setState(STATES.FALL);
-        if (keys.includes("ArrowRight")) this.player.velocity.x = 5;
-        if (keys.includes("ArrowLeft")) this.player.velocity.x = -5;
+        if (keys.includes("ArrowRight")) {
+            this.player.velocity.x = 5;
+            this.player.direction = 1;
+        }
+        if (keys.includes("ArrowLeft")) {
+            this.player.velocity.x = -5;
+            this.player.direction = -1;
+        }
+        if (keys.includes("Space")) this.player.setState(STATES.ATTACK);
         if (this.player.onGround) this.player.setState(STATES.IDLE);
     };
 }
@@ -1032,13 +1086,21 @@ class Fall extends State {
         });
     }
     input = (keys)=>{
-        if (this.player.velocity.y > 0) {
+        if (this.player.velocity.y > 1) {
             this.player.setState(STATES.FALL);
             this.player.setSprite(SPRITES.FALL);
+            this.player.onGround = false;
         }
+        if (keys.includes("ArrowRight")) {
+            this.player.velocity.x = 5;
+            this.player.direction = 1;
+        }
+        if (keys.includes("ArrowLeft")) {
+            this.player.velocity.x = -5;
+            this.player.direction = -1;
+        }
+        if (keys.includes("Space")) this.player.setState(STATES.ATTACK);
         if (this.player.onGround) this.player.setState(STATES.IDLE);
-        if (keys.includes("ArrowRight")) this.player.velocity.x = 5;
-        if (keys.includes("ArrowLeft")) this.player.velocity.x = -5;
     };
 }
 class Crouch extends State {
@@ -1094,12 +1156,9 @@ class Slide extends State {
         if (keys.includes("ArrowDown")) {
             this.player.setState(STATES.SLIDE);
             this.player.setSprite(SPRITES.SLIDE);
-            this.player.velocity.x = 10;
+            this.player.velocity.x = 10 * this.player.direction;
         }
-        if (keys.includes("ArrowRight") && keys.includes("ArrowDown")) {
-            this.player.setState(STATES.SLIDE);
-            this.player.velocity.x -= 1;
-        }
+        if (keys.includes("ArrowRight") && keys.includes("ArrowDown")) this.player.setState(STATES.SLIDE);
         if (keys.includes("ArrowLeft") && keys.includes("ArrowDown")) this.player.setState(STATES.SLIDE);
         if (!keys.includes("ArrowDown")) this.player.setState(STATES.IDLE);
     };
@@ -1112,17 +1171,30 @@ class Attack extends State {
         });
     }
     input = (keys)=>{
-        if (keys.includes("Space")) {
-            this.player.setState(STATES.ATTACK);
-            this.player.setSprite(SPRITES.ATTACK);
-            this.player.attack();
-            this.player.takeDamage();
-        }
-        if (keys.length === 0 && this.player.framesCurrent >= this.player.maxFrames - 1) this.player.setState(STATES.IDLE);
+        this.player.setSprite(SPRITES.ATTACK);
+        this.player.attack();
+        this.player.maxFrames = 1;
+        // if (this.player.framesCurrent >= this.player.maxFrames - 1) {
+        // }
+        if (this.player.onGround) this.player.setState(STATES.IDLE);
+    };
+}
+class AttackWalk extends State {
+    constructor(player){
+        super({
+            player,
+            state: "ATTACKWALK"
+        });
+    }
+    input = (keys)=>{
+        this.player.velocity.x = 0;
+        this.player.setSprite(SPRITES.ATTACKWALK);
+        this.player.attack();
+        if (this.player.framesCurrent >= this.player.maxFrames - 1) this.player.setState(STATES.IDLE);
     };
 }
 
-},{"/assets/knight/_Idle.png":"4ZX7k","/assets/knight/_Run.png":"jVsQq","/assets/knight/_Jump.png":"gjPKo","/assets/knight/_Fall.png":"5BSCR","/assets/knight/_Crouch.png":"35ESi","/assets/knight/_CrouchWalk.png":"kj2F4","/assets/knight/_Slide.png":"2FXn6","/assets/knight/_Attack.png":"ltDV1","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"4ZX7k":[function(require,module,exports) {
+},{"/assets/knight/_Idle.png":"4ZX7k","/assets/knight/_Run.png":"jVsQq","/assets/knight/_Jump.png":"gjPKo","/assets/knight/_Fall.png":"5BSCR","/assets/knight/_Crouch.png":"35ESi","/assets/knight/_CrouchWalk.png":"kj2F4","/assets/knight/_Slide.png":"2FXn6","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/assets/knight/_AttackNoMovement.png":"1P74T","/assets/knight/_Attack2NoMovement.png":"kFXhh","/assets/knight/_TurnAround.png":"dvf1X"}],"4ZX7k":[function(require,module,exports) {
 module.exports = require("68b7f2e7e9d50903").getBundleURL("ksUvU") + "_Idle.e9e6cea5.png" + "?" + Date.now();
 
 },{"68b7f2e7e9d50903":"lgJ39"}],"lgJ39":[function(require,module,exports) {
@@ -1178,10 +1250,7 @@ module.exports = require("d4e58e2d89c229a1").getBundleURL("ksUvU") + "_CrouchWal
 },{"d4e58e2d89c229a1":"lgJ39"}],"2FXn6":[function(require,module,exports) {
 module.exports = require("d46846576fba05b7").getBundleURL("ksUvU") + "_Slide.89906024.png" + "?" + Date.now();
 
-},{"d46846576fba05b7":"lgJ39"}],"ltDV1":[function(require,module,exports) {
-module.exports = require("f26f0ebf712f5a40").getBundleURL("ksUvU") + "_Attack.84fc777d.png" + "?" + Date.now();
-
-},{"f26f0ebf712f5a40":"lgJ39"}],"gkKU3":[function(require,module,exports) {
+},{"d46846576fba05b7":"lgJ39"}],"gkKU3":[function(require,module,exports) {
 exports.interopDefault = function(a) {
     return a && a.__esModule ? a : {
         default: a
@@ -1211,43 +1280,54 @@ exports.export = function(dest, destName, get) {
     });
 };
 
-},{}],"9lzH1":[function(require,module,exports) {
+},{}],"1P74T":[function(require,module,exports) {
+module.exports = require("5097cddfa0d4e1c").getBundleURL("ksUvU") + "_AttackNoMovement.09a2b1aa.png" + "?" + Date.now();
+
+},{"5097cddfa0d4e1c":"lgJ39"}],"kFXhh":[function(require,module,exports) {
+module.exports = require("ac95833568402c74").getBundleURL("ksUvU") + "_Attack2NoMovement.6967f613.png" + "?" + Date.now();
+
+},{"ac95833568402c74":"lgJ39"}],"dvf1X":[function(require,module,exports) {
+module.exports = require("16e7ff5f831c443e").getBundleURL("ksUvU") + "_TurnAround.28c3575b.png" + "?" + Date.now();
+
+},{"16e7ff5f831c443e":"lgJ39"}],"9lzH1":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 class Sprite {
-    constructor({ position, imageSrc, scale = 1, columns = 1, rows = 1, row = 0, maxFrames = 1, imageWidth, offset = {
-        x: 0,
-        y: 0
-    }, framesCurrent = 0 }){
+    constructor({ position, imageSrc, scale = 1, columns = 1, maxFrames = 1, framesCurrent = 0, width, height }){
         this.position = position;
         this.image = new Image();
         this.image.src = imageSrc;
         this.scale = scale;
         this.columns = columns;
-        this.rows = rows;
-        this.row = row;
         this.maxFrames = maxFrames;
-        this.imageWidth = imageWidth || this.image.width;
         this.framesCurrent = framesCurrent;
         this.framesElapsed = 0;
         this.framesHold = 5;
-        this.offset = offset;
+        this.width = width;
+        this.height = height;
     }
     update = ()=>{
         this.draw();
         this.animateFrames();
     };
     draw = ()=>{
-        c.drawImage(this.image, this.framesCurrent * (this.image.width / this.columns), this.row * (this.image.height / this.rows), this.image.width / this.columns, this.image.height / this.rows, this.position.x - this.offset.x, this.position.y - this.offset.y, this.image.width / this.columns * this.scale, this.image.height / this.rows * this.scale);
+        let frameWidth = this.image.width / this.columns;
+        let direction = this.direction || 1;
+        c.save();
+        c.scale(direction, 1);
+        c.drawImage(this.image, this.framesCurrent * frameWidth, 0, this.image.width / this.columns, this.image.height, direction * (this.position.x + this.width / 2) - frameWidth / 2 * this.scale, this.position.y - this.image.height / 2 * this.scale, frameWidth * this.scale, this.image.height * this.scale);
+        //Helping image offset
+        // c.fillStyle = 'rgba(0, 0, 0, 0.5)'
+        // c.fillRect((direction * (this.position.x + this.width / 2) - frameWidth / 2 * this.scale), this.position.y - this.image.height / 2 * this.scale, frameWidth * this.scale, this.image.height * this.scale)
+        c.restore();
     };
     animateFrames = ()=>{
         this.framesElapsed++;
-        if (this.framesElapsed % this.framesHold === 0) {
-            if (this.framesCurrent < this.maxFrames - 1) this.framesCurrent++;
-            else this.framesCurrent = 0;
-        }
+        if (this.framesCurrent < this.maxFrames - 1) {
+            if (this.framesElapsed % this.framesHold === 0) this.framesCurrent++;
+        } else this.framesCurrent = 0;
     };
 }
 exports.default = Sprite;
@@ -1329,7 +1409,7 @@ class Background {
     };
     draw = (pPosX, pState, pFicPosX, pWidth, gameWidth, collisionBlocks, pVelX, pStop)=>{
         // const gameImages = Math.round(gameWidth / canvas.width)
-        if (pPosX === 0.8 * canvas.width - pWidth && (pState.state !== "IDLE" || pState.state !== "CROUCH") && !pStop) {
+        if (pPosX >= 0.8 * canvas.width - pWidth && (pState.state !== "IDLE" || pState.state !== "CROUCH") && !pStop) {
             this.positionX1 = -pPosX + 0.8 * canvas.width - pWidth - 0.2 * pFicPosX;
             this.positionX2 = -pPosX + 0.8 * canvas.width - pWidth - 0.5 * pFicPosX;
             this.positionX3 = -pPosX + 0.8 * canvas.width - pWidth - 0.8 * pFicPosX;
@@ -1401,6 +1481,7 @@ parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "arrayParse2D", ()=>arrayParse2D);
 parcelHelpers.export(exports, "checkPlayerCollision", ()=>checkPlayerCollision);
 parcelHelpers.export(exports, "checkPlayerEnemyPosition", ()=>checkPlayerEnemyPosition);
+parcelHelpers.export(exports, "rectangularCollision", ()=>rectangularCollision);
 const arrayParse2D = (array)=>{
     const rows = [];
     for(let i = 0; i < array.length; i += 48)rows.push(array.slice(i, i + 48));
@@ -1408,25 +1489,19 @@ const arrayParse2D = (array)=>{
 };
 const checkPlayerCollision = (player, collisionBlocks)=>{
     collisionBlocks.forEach((block)=>{
-        // if (player.position.x < block.position.x + block.width &&
-        //     player.position.x + player.width > block.position.x &&
-        //     player.position.y < block.position.y + block.height &&
-        //     player.height + player.position.y > block.position.y) {
-        //         console.log("cos");
-        // }
         //bottom
         if (player.position.y + player.height + player.velocity.y >= block.position.y && player.position.y < block.position.y && player.position.x < block.position.x + block.width && player.position.x + player.width > block.position.x) {
-            player.velocity.y = 0;
-            player.onGround = true;
+            player.velocity.y = Math.max(-1 * (player.position.y + player.height - block.position.y), 0);
+            player.onGround = player.velocity.y === 0;
         }
         //left && right
         if (player.position.x + player.velocity.x <= block.position.x + block.width && player.position.x + player.width + player.velocity.x >= block.position.x && player.position.y < block.position.y + block.height && player.height + player.position.y > block.position.y) {
             player.velocity.x = 0;
-            player.stopped = true // nie zatrzymuje sie do konca
-            ;
+            player.stopped = true;
         }
-        //up
+        //top
         if (player.position.y + player.velocity.y < block.position.y + block.height && player.position.y + player.height > block.position.y + block.height && player.position.x < block.position.x + block.width && player.position.x + player.width > block.position.x) {
+            console.log(player.velocity.y);
             if (-player.velocity.y * 0.2 > 1) player.velocity.y = -player.velocity.y * 0.2;
             else player.velocity.y = 1;
             player.onGround = false;
@@ -1434,12 +1509,21 @@ const checkPlayerCollision = (player, collisionBlocks)=>{
     });
 };
 const checkPlayerEnemyPosition = (player, enemy)=>{
-    if (player.position.x + player.width * 0.6 < enemy.position.x) enemy.velocity.x = -1.5;
-    if (player.position.x > enemy.position.x + enemy.width * 0.6) enemy.velocity.x = 1.5;
+    if (player.position.x + player.width * 0.6 < enemy.position.x) {
+        enemy.velocity.x = -1.5;
+        enemy.direction = 1;
+    }
+    if (player.position.x > enemy.position.x + enemy.width * 0.6) {
+        enemy.velocity.x = 1.5;
+        enemy.direction = -1;
+    }
     if (player.position.y + player.height < enemy.position.y && player.position.x < enemy.position.x + enemy.width * 0.6 && player.position.x + player.width * 0.6 > enemy.position.x && enemy.onGround) {
         enemy.onGround = false;
         enemy.velocity.y = -15;
     }
+};
+const rectangularCollision = (rectangle1, rectangle2)=>{
+    return rectangle1.attackBox.position.x <= rectangle2.position.x + rectangle2.width && rectangle1.attackBox.position.x + rectangle1.attackBox.width >= rectangle2.position.x && rectangle1.attackBox.position.y < rectangle2.position.y + rectangle2.height && rectangle1.attackBox.height + rectangle1.position.y > rectangle2.position.y;
 };
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"2ScF8":[function(require,module,exports) {
@@ -1740,7 +1824,7 @@ const collisions = [
     0,
     0,
     0,
-    579,
+    0,
     0,
     0,
     0,
@@ -1891,17 +1975,13 @@ var _blueHealthBarPngDefault = parcelHelpers.interopDefault(_blueHealthBarPng);
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 class Enemy extends (0, _spriteJsDefault.default) {
-    constructor({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, maxFrames = 1, offset = {
-        x: 0,
-        y: 0
-    } }){
+    constructor({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, maxFrames = 1 }){
         super({
             position,
             imageSrc,
             scale,
             columns,
-            maxFrames,
-            offset
+            maxFrames
         });
         // this.position = position
         this.velocity = velocity;
@@ -1910,7 +1990,9 @@ class Enemy extends (0, _spriteJsDefault.default) {
         this.gravity = 0.5;
         this.onGround = false;
         this.stopped = false;
-        //Enemy health bar
+        this.direction = 1;
+        this.health = 100;
+        // Enemy health bar
         this.healthBar = new (0, _spriteJsDefault.default)({
             position: {
                 x: this.position.x,
@@ -1920,34 +2002,42 @@ class Enemy extends (0, _spriteJsDefault.default) {
             scale: 2,
             columns: 5,
             maxFrames: 1,
-            offset: {
-                x: 10,
-                y: 40
-            }
+            width: 64
         });
     }
-    update = (player)=>{
+    update = ({ player, checkCollision })=>{
         this.ddraw();
         this.draw();
         this.animateFrames();
+        checkCollision();
         this.moving(player.position.x, player.state, player.width, player.velocity.x, player.stopped);
+        this.checkHealth();
         this.healthBar.draw();
         this.healthBar.animateFrames();
         this.healthBar.position.x = this.position.x;
-        this.healthBar.position.y = this.position.y;
+        this.healthBar.position.y = this.position.y - 32;
     };
     ddraw = ()=>{
         c.fillStyle = "green";
         c.fillRect(this.position.x, this.position.y, this.width, this.height);
     };
     moving = (pPosX, pState, pWidth, pVelX, pStop)=>{
-        console.log(pStop);
+        // console.log(pStop);
         if (pPosX === 0.8 * canvas.width - pWidth && (pState.state !== "IDLE" || pState.state !== "CROUCH") && !pStop) this.position.x = this.position.x - pVelX;
         if (pPosX === 0.2 * canvas.width && (pState.state !== "IDLE" || pState.state !== "CROUCH") && !pStop) this.position.x = this.position.x - pVelX;
         if (!this.stopped) this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
         this.velocity.y += this.gravity;
         this.stopped = false;
+    };
+    takeDamage = ()=>{
+        this.health -= 25;
+    };
+    checkHealth = ()=>{
+        if (this.health < 100) this.healthBar.framesCurrent = 1;
+        if (this.health < 75) this.healthBar.framesCurrent = 2;
+        if (this.health < 50) this.healthBar.framesCurrent = 3;
+        if (this.health < 25) this.healthBar.framesCurrent = 4;
     };
 }
 exports.default = Enemy;
@@ -1979,19 +2069,37 @@ var _arrowRightPng = require("/assets/keys/arrowRight.png");
 var _arrowRightPngDefault = parcelHelpers.interopDefault(_arrowRightPng);
 var _arrowRightPressedPng = require("/assets/keys/arrowRightPressed.png");
 var _arrowRightPressedPngDefault = parcelHelpers.interopDefault(_arrowRightPressedPng);
+var _spacePng = require("/assets/keys/space.png");
+var _spacePngDefault = parcelHelpers.interopDefault(_spacePng);
+var _spacePressedPng = require("/assets/keys/spacePressed.png");
+var _spacePressedPngDefault = parcelHelpers.interopDefault(_spacePressedPng);
 var _skillBoxPng = require("/assets/keys/skillBox.png");
 var _skillBoxPngDefault = parcelHelpers.interopDefault(_skillBoxPng);
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
-const margin = 32;
+const margin = 64;
 class RenderKeys {
     constructor({ position, width, height }){
         this.position = position;
         this.width = width;
         this.height = height;
+        this.arrowLeft = new (0, _spriteDefault.default)({
+            position: {
+                x: this.position.x + margin * 3,
+                y: this.position.y + margin
+            },
+            width: 64,
+            height: 64,
+            imageSrc: (0, _arrowLeftPngDefault.default),
+            scale: 4,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        });
         this.arrowUp = new (0, _spriteDefault.default)({
             position: {
-                x: this.position.x + 64 + 3 * margin,
+                x: this.position.x + margin * 4,
                 y: this.position.y + margin
             },
             width: 64,
@@ -2003,24 +2111,10 @@ class RenderKeys {
                 y: 0
             }
         });
-        this.arrowLeft = new (0, _spriteDefault.default)({
-            position: {
-                x: this.position.x + 3 * margin,
-                y: this.position.y + 32 + margin
-            },
-            width: 64,
-            height: 64,
-            imageSrc: (0, _arrowLeftPngDefault.default),
-            scale: 4,
-            offset: {
-                x: 0,
-                y: 0
-            }
-        });
         this.arrowDown = new (0, _spriteDefault.default)({
             position: {
-                x: this.position.x + 64 + 3 * margin,
-                y: this.position.y + 64 + margin
+                x: this.position.x + margin * 5,
+                y: this.position.y + margin
             },
             width: 64,
             height: 64,
@@ -2033,8 +2127,8 @@ class RenderKeys {
         });
         this.arrowRight = new (0, _spriteDefault.default)({
             position: {
-                x: this.position.x + 128 + 3 * margin,
-                y: this.position.y + 32 + margin
+                x: this.position.x + margin * 6,
+                y: this.position.y + margin
             },
             width: 64,
             height: 64,
@@ -2045,12 +2139,40 @@ class RenderKeys {
                 y: 0
             }
         });
-        this.skillBox = new (0, _spriteDefault.default)({
+        this.space = new (0, _spriteDefault.default)({
             position: {
-                x: this.position.x + 256 + 3 * margin,
-                y: this.position.y + 32 + margin
+                x: this.position.x + margin * 7,
+                y: this.position.y + margin
             },
             width: 128,
+            height: 64,
+            imageSrc: (0, _spacePngDefault.default),
+            scale: 4,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        });
+        this.skillBoxAttack1 = new (0, _spriteDefault.default)({
+            position: {
+                x: this.position.x + margin * 10,
+                y: this.position.y + margin
+            },
+            width: 64,
+            height: 64,
+            imageSrc: (0, _skillBoxPngDefault.default),
+            scale: 2,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        });
+        this.skillBoxAttack2 = new (0, _spriteDefault.default)({
+            position: {
+                x: this.position.x + margin * 12,
+                y: this.position.y + margin
+            },
+            width: 64,
             height: 64,
             imageSrc: (0, _skillBoxPngDefault.default),
             scale: 2,
@@ -2071,8 +2193,12 @@ class RenderKeys {
         this.arrowDown.animateFrames();
         this.arrowRight.draw();
         this.arrowRight.animateFrames();
-        this.skillBox.draw();
-        this.skillBox.animateFrames();
+        this.space.draw();
+        this.space.animateFrames();
+        this.skillBoxAttack1.draw();
+        this.skillBoxAttack1.animateFrames();
+        this.skillBoxAttack2.draw();
+        this.skillBoxAttack2.animateFrames();
     };
     // ddraw = () => {
     //     c.fillStyle = 'red'
@@ -2087,11 +2213,13 @@ class RenderKeys {
         else this.arrowDown.image.src = (0, _arrowDownPngDefault.default);
         if (keys.includes("ArrowRight")) this.arrowRight.image.src = (0, _arrowRightPressedPngDefault.default);
         else this.arrowRight.image.src = (0, _arrowRightPngDefault.default);
+        if (keys.includes("Space")) this.space.image.src = (0, _spacePressedPngDefault.default);
+        else this.space.image.src = (0, _spacePngDefault.default);
     };
 }
 exports.default = RenderKeys;
 
-},{"./Sprite":"9lzH1","/assets/keys/arrowUp.png":"5ZcCS","/assets/keys/arrowUpPressed.png":"ewwrp","/assets/keys/arrowLeft.png":"gnVQP","/assets/keys/arrowLeftPressed.png":"9VKJr","/assets/keys/arrowDown.png":"e5tQE","/assets/keys/arrowDownPressed.png":"39CkS","/assets/keys/arrowRight.png":"ar8Q2","/assets/keys/arrowRightPressed.png":"5WqrE","/assets/keys/skillBox.png":"lYe7Q","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"5ZcCS":[function(require,module,exports) {
+},{"./Sprite":"9lzH1","/assets/keys/arrowUp.png":"5ZcCS","/assets/keys/arrowUpPressed.png":"ewwrp","/assets/keys/arrowLeft.png":"gnVQP","/assets/keys/arrowLeftPressed.png":"9VKJr","/assets/keys/arrowDown.png":"e5tQE","/assets/keys/arrowDownPressed.png":"39CkS","/assets/keys/arrowRight.png":"ar8Q2","/assets/keys/arrowRightPressed.png":"5WqrE","/assets/keys/skillBox.png":"lYe7Q","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/assets/keys/space.png":"bg7FV","/assets/keys/spacePressed.png":"7wUJ3"}],"5ZcCS":[function(require,module,exports) {
 module.exports = require("e46a8565b83fbbde").getBundleURL("ksUvU") + "arrowUp.2db42674.png" + "?" + Date.now();
 
 },{"e46a8565b83fbbde":"lgJ39"}],"ewwrp":[function(require,module,exports) {
@@ -2118,6 +2246,12 @@ module.exports = require("1317a5136b109d93").getBundleURL("ksUvU") + "arrowRight
 },{"1317a5136b109d93":"lgJ39"}],"lYe7Q":[function(require,module,exports) {
 module.exports = require("4020917efff96794").getBundleURL("ksUvU") + "skillBox.1759bb35.png" + "?" + Date.now();
 
-},{"4020917efff96794":"lgJ39"}]},["fQFrJ","1Z4Rq"], "1Z4Rq", "parcelRequire1020")
+},{"4020917efff96794":"lgJ39"}],"bg7FV":[function(require,module,exports) {
+module.exports = require("e2a9a8d96c81c55f").getBundleURL("ksUvU") + "space.0a01e446.png" + "?" + Date.now();
+
+},{"e2a9a8d96c81c55f":"lgJ39"}],"7wUJ3":[function(require,module,exports) {
+module.exports = require("7cdbec49a81f4f86").getBundleURL("ksUvU") + "spacePressed.bec887cc.png" + "?" + Date.now();
+
+},{"7cdbec49a81f4f86":"lgJ39"}]},["fQFrJ","1Z4Rq"], "1Z4Rq", "parcelRequire1020")
 
 //# sourceMappingURL=index.5d9dacde.js.map

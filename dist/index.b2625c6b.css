@@ -5,7 +5,8 @@
 }
 
 body {
-  background-image: url("background_layer_1.ecfd8cc7.png");
+  background-image: url("board2.db0c5fbd.png");
+  background-position-y: -100px;
   background-repeat: no-repeat;
   background-size: cover;
   justify-content: center;
@@ -17,7 +18,7 @@ body {
 
 .game-container {
   image-rendering: pixelated;
-  background-image: url("paperMap.3ae541ed.png");
+  background-image: url("backgroundPaper.bf0ceec9.png");
   background-position-y: 100%;
   background-repeat: no-repeat;
   background-size: cover;
@@ -25,7 +26,7 @@ body {
   justify-content: flex-start;
   align-items: center;
   width: 1024px;
-  height: 768px;
+  height: 704px;
   display: flex;
 }
 

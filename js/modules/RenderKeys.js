@@ -7,20 +7,36 @@ import arrowDownImg from "/assets/keys/arrowDown.png"
 import arrowDownPressedImg from "/assets/keys/arrowDownPressed.png"
 import arrowRightImg from "/assets/keys/arrowRight.png"
 import arrowRightPressedImg from "/assets/keys/arrowRightPressed.png"
+import spaceImg from "/assets/keys/space.png"
+import spacePressedImg from "/assets/keys/spacePressed.png"
 import skillBoxImg from "/assets/keys/skillBox.png"
 
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
-const margin = 32
+const margin = 64
 
 class RenderKeys{
     constructor ({ position, width, height }) {
         this.position = position
         this.width = width
         this.height = height
+        this.arrowLeft = new Sprite({
+            position: {
+                x: this.position.x + margin * 3,
+                y: this.position.y + margin
+            },
+            width: 64,
+            height: 64,
+            imageSrc: arrowLeftImg,
+            scale: 4,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        })
         this.arrowUp = new Sprite({
             position: {
-                x: this.position.x + 64 + 3 * margin,
+                x: this.position.x + margin * 4,
                 y: this.position.y + margin
             },
             width: 64,
@@ -32,24 +48,10 @@ class RenderKeys{
                 y: 0
             }
         })
-        this.arrowLeft = new Sprite({
-            position: {
-                x: this.position.x + 3 * margin,
-                y: this.position.y + 32 + margin
-            },
-            width: 64,
-            height: 64,
-            imageSrc: arrowLeftImg,
-            scale: 4,
-            offset: {
-                x: 0,
-                y: 0
-            }
-        })
         this.arrowDown = new Sprite({
             position: {
-                x: this.position.x + 64 + 3 * margin,
-                y: this.position.y + 64 + margin
+                x: this.position.x + margin * 5,
+                y: this.position.y + margin
             },
             width: 64,
             height: 64,
@@ -62,8 +64,8 @@ class RenderKeys{
         })
         this.arrowRight = new Sprite({
             position: {
-                x: this.position.x + 128 + 3 * margin,
-                y: this.position.y + 32 + margin
+                x: this.position.x + margin * 6,
+                y: this.position.y + margin
             },
             width: 64,
             height: 64,
@@ -74,12 +76,40 @@ class RenderKeys{
                 y: 0
             }
         })
-        this.skillBox = new Sprite({
+        this.space = new Sprite({
             position: {
-                x: this.position.x + 256 + 3 * margin,
-                y: this.position.y + 32 + margin
+                x: this.position.x + margin * 7,
+                y: this.position.y + margin
             },
             width: 128,
+            height: 64,
+            imageSrc: spaceImg,
+            scale: 4,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        })
+        this.skillBoxAttack1 = new Sprite({
+            position: {
+                x: this.position.x + margin * 10,
+                y: this.position.y + margin
+            },
+            width: 64,
+            height: 64,
+            imageSrc: skillBoxImg,
+            scale: 2,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        })
+        this.skillBoxAttack2 = new Sprite({
+            position: {
+                x: this.position.x + margin * 12,
+                y: this.position.y + margin
+            },
+            width: 64,
             height: 64,
             imageSrc: skillBoxImg,
             scale: 2,
@@ -101,9 +131,13 @@ class RenderKeys{
         this.arrowDown.animateFrames()
         this.arrowRight.draw()
         this.arrowRight.animateFrames()
+        this.space.draw()
+        this.space.animateFrames()
 
-        this.skillBox.draw()
-        this.skillBox.animateFrames()
+        this.skillBoxAttack1.draw()
+        this.skillBoxAttack1.animateFrames()
+        this.skillBoxAttack2.draw()
+        this.skillBoxAttack2.animateFrames()
     }
 
     // ddraw = () => {
@@ -131,6 +165,11 @@ class RenderKeys{
             this.arrowRight.image.src = arrowRightPressedImg
         } else {
             this.arrowRight.image.src = arrowRightImg
+        }
+        if (keys.includes('Space')) {
+            this.space.image.src = spacePressedImg
+        } else {
+            this.space.image.src = spaceImg
         }
     }
 }

@@ -5,14 +5,13 @@ const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
 
 class Enemy extends Sprite {
-    constructor ({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, maxFrames = 1, offset = {x: 0, y: 0} }) {
+    constructor ({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, maxFrames = 1 }) {
         super({
             position,
             imageSrc,
             scale,
             columns,
-            maxFrames,
-            offset
+            maxFrames
         })
         // this.position = position
         this.velocity = velocity
@@ -21,8 +20,10 @@ class Enemy extends Sprite {
         this.gravity = 0.5
         this.onGround = false
         this.stopped = false
+        this.direction = 1
+        this.health = 100
 
-        //Enemy health bar
+        // Enemy health bar
         this.healthBar = new Sprite({
             position: {
                 x: this.position.x,
@@ -32,23 +33,22 @@ class Enemy extends Sprite {
             scale: 2,
             columns: 5,
             maxFrames: 1,
-            offset: {
-                x: 10,
-                y: 40
-            }
+            width: 64
         })
     }
 
-    update = (player) => {
+    update = ({ player, checkCollision }) => {
         this.ddraw()
         this.draw()
         this.animateFrames()
+        checkCollision()
         this.moving(player.position.x, player.state, player.width, player.velocity.x, player.stopped)
+        this.checkHealth()
 
         this.healthBar.draw()
         this.healthBar.animateFrames()
         this.healthBar.position.x = this.position.x
-        this.healthBar.position.y = this.position.y
+        this.healthBar.position.y = this.position.y - 32
     }
 
     ddraw = () => {
@@ -57,7 +57,7 @@ class Enemy extends Sprite {
     }
     
     moving = (pPosX, pState, pWidth, pVelX, pStop) => {
-        console.log(pStop);
+        // console.log(pStop);
         if (pPosX === 0.8 * canvas.width - pWidth && (pState.state !== 'IDLE' || pState.state !== 'CROUCH') && !pStop) {
             this.position.x = this.position.x - pVelX
         }
@@ -71,6 +71,25 @@ class Enemy extends Sprite {
         this.velocity.y += this.gravity
 
         this.stopped = false
+    }
+
+    takeDamage = () => {
+        this.health -= 25
+    }
+
+    checkHealth = () => {
+        if (this.health < 100) {
+            this.healthBar.framesCurrent = 1
+        }
+        if (this.health < 75) {
+            this.healthBar.framesCurrent = 2
+        }
+        if (this.health < 50) {
+            this.healthBar.framesCurrent = 3
+        }
+        if (this.health < 25) {
+            this.healthBar.framesCurrent = 4
+        }
     }
 }
 

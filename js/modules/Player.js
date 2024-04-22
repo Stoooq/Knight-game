@@ -1,4 +1,4 @@
-import { SPRITES, STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk, Slide, Attack } from "./PlayerState.js"
+import { SPRITES, STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk, Slide, Attack, AttackWalk } from "./PlayerState.js"
 import Sprite from "./Sprite.js"
 import healthBarImg from '/assets/healthBar/greyHealthBar.png'
 
@@ -6,14 +6,13 @@ const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
 
 class Player extends Sprite {
-    constructor ({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, maxFrames = 1, offset = {x: 0, y: 0}, attackBox = { offset: {}, width: 100, height: 50 } }) {
+    constructor ({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, maxFrames = 1, attackBox = { offset: {}, width: 150, height: 120 } }) {
         super({
             position,
             imageSrc,
             scale,
             columns,
-            maxFrames,
-            offset
+            maxFrames
         })
 
         //Player properties
@@ -25,7 +24,7 @@ class Player extends Sprite {
 
         //Player state and sprite properties
         this.state = null
-        this.states = [new Idle(this), new Running(this), new Jump(this), new Fall(this), new Crouch(this), new CrouchWalk(this), new Slide(this), new Attack(this)]
+        this.states = [new Idle(this), new Running(this), new Jump(this), new Fall(this), new Crouch(this), new CrouchWalk(this), new Slide(this), new Attack(this), new AttackWalk(this)]
         this.setState(STATES.IDLE)
         this.setSprite(SPRITES.IDLE)
         this.previousState
@@ -48,7 +47,7 @@ class Player extends Sprite {
             height: attackBox.height
         }
 
-        //Player health bar
+        // Player health bar
         this.healthBar = new Sprite({
             position: {
                 x: this.position.x,
@@ -58,31 +57,31 @@ class Player extends Sprite {
             scale: 2,
             columns: 5,
             maxFrames: 1,
-            offset: {
-                x: 10,
-                y: 40
-            }
+            width: 64,
         })
     }
 
-    update = ({ keys, gameWidth, gameHeight }) => {
+    update = ({ keys, gameWidth, gameHeight, checkCollision, time }) => {
+        // console.log(this.state);
         this.state.input(keys)
+        this.state.update(time)
         this.ddraw()
-        this.draw()
         this.animateFrames()
+        this.draw()
+        checkCollision()
         this.moving(gameWidth)
         this.checkHealth()
 
-        this.healthBar.draw()
-        this.healthBar.animateFrames()
-        this.healthBar.position.x = this.position.x
-        this.healthBar.position.y = this.position.y
+        // this.healthBar.draw()
+        // this.healthBar.animateFrames()
+        // this.healthBar.position.x = this.position.x
+        // this.healthBar.position.y = this.position.y - 32
 
         if (this.attacking) {
-            c.fillStyle = 'red'
+            // c.fillStyle = 'red'
             // c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
         }
-        this.attackBox.position.x = this.position.x
+        this.direction === 1 ? this.attackBox.position.x = this.position.x + this.width / 2 : this.attackBox.position.x = this.position.x + this.width / 2 - this.attackBox.width
         this.attackBox.position.y = this.position.y
     }
 
@@ -94,6 +93,10 @@ class Player extends Sprite {
     setState = (state) => {
         this.previousState = this.state
         this.state = this.states[state]
+        if (this.previousState !== this.state) {
+            this.framesCurrent = 0
+        }
+        // this.state.reset()
     }
 
     setSprite = (sprite) => {
@@ -108,6 +111,9 @@ class Player extends Sprite {
         }
         this.position.y += this.velocity.y
         this.velocity.y += this.gravity
+
+        // console.log(this.fictionPosition, this.position.x);
+        
 
         //Setting positions
         if (this.fictionPosition >= gameWidth) {
@@ -131,20 +137,18 @@ class Player extends Sprite {
             this.position.x = 0
         }
         this.stopped = false
+        // this.position.x = Math.round(this.position.x)
     }
 
     attack = () => {
         this.attacking = true
-        setTimeout(() => {
-            this.attacking = false
-        }, 100)
+        // setTimeout(() => {
+        //     this.attacking = false
+        // }, 200)
     }
 
     takeDamage = () => {
-        setTimeout(() => {
-            this.health -= 25
-        }, 300)
-        
+        this.health -= 25
     }
 
     checkHealth = () => {

@@ -10,8 +10,9 @@ body {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-image: url("/assets/oak_woods_v1.0/background/background_layer_1.png");
+  background-image: url("/assets/board2.png");
   background-size: cover;
+  background-position-y: -100px;
   background-repeat: no-repeat;
 }
 

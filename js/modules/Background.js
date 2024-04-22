@@ -33,7 +33,8 @@ class Background {
 
     draw = (pPosX, pState, pFicPosX, pWidth, gameWidth, collisionBlocks, pVelX, pStop) => {
         // const gameImages = Math.round(gameWidth / canvas.width)
-        if (pPosX === 0.8 * canvas.width - pWidth && (pState.state !== 'IDLE' || pState.state !== 'CROUCH') && !pStop) {
+        
+        if (pPosX >= 0.8 * canvas.width - pWidth && (pState.state !== 'IDLE' || pState.state !== 'CROUCH') && !pStop) {
             this.positionX1 = -pPosX + 0.8 * canvas.width - pWidth - 0.2 * pFicPosX
             this.positionX2 = -pPosX + 0.8 * canvas.width - pWidth - 0.5 * pFicPosX
             this.positionX3 = -pPosX + 0.8 * canvas.width - pWidth - 0.8 * pFicPosX

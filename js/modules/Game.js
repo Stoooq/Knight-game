@@ -2,7 +2,7 @@ import Player from "./Player.js";
 import Input from "./Input.js";
 import Background from "./Background.js";
 import CollisionBlock from "./CollisionBlock.js";
-import { arrayParse2D, checkPlayerCollision, checkPlayerEnemyPosition } from "../utils.js";
+import { arrayParse2D, checkPlayerCollision, checkPlayerEnemyPosition, rectangularCollision } from "../utils.js";
 import { collisions } from "../data/collisions.js"
 import Enemy from "./Enemy.js";
 import playerImg from '/assets/knight/_Idle.png'
@@ -25,15 +25,11 @@ class Game {
                 x: 0,
                 y: 0
             },
-            width: 63,
-            height: 114,
+            width: 70,
+            height: 119,
             imageSrc: playerImg,
             scale: 3,
-            maxFrames: 10,
-            offset: {
-                x: 132,
-                y: 125,
-            }
+            maxFrames: 10
         })
         this.input = new Input()
         this.background = new Background({
@@ -65,16 +61,12 @@ class Game {
                 x: 0,
                 y: 0
             },
-            width: 75,
-            height: 45,
+            width: 70,
+            height: 35,
             imageSrc: enemyImg,
             scale: 3,
             columns: 8,
-            maxFrames: 8,
-            offset: {
-                x: 10,
-                y: 26
-            }
+            maxFrames: 8
         })
         this.renderKeys = new RenderKeys({
             position: {
@@ -86,17 +78,38 @@ class Game {
         })
     }
 
-    update = () => {
+    checkPlayerCollision = () => {
         checkPlayerCollision(this.player, this.collisionBlocks)
+        if (rectangularCollision(this.player, this.enemy) && this.player.attacking && this.player.framesCurrent === 2) {
+            console.log("cos");
+            this.player.attacking = false
+            this.enemy.takeDamage()
+        }
+        // let collision = checkPlayerCollision(this.player, this.collisionBlocks)
+        // switch (collision) {
+        //     case 1:
+        //         console.log('bottom');
+        //         break
+        // }
+    }
+    checkEnemyCollision = () => {
         checkPlayerCollision(this.enemy, this.collisionBlocks)
         checkPlayerEnemyPosition(this.player, this.enemy)
+    }
+
+    update = (time) => {
         this.background.update(this.player, this.width, this.collisionBlocks)
         this.player.update({
             keys: this.input.keys,
             gameWidth: this.width,
-            gameHeight: this.height
+            gameHeight: this.height,
+            checkCollision: this.checkPlayerCollision,
+            time: time
         })
-        this.enemy.update(this.player)
+        // this.enemy.update({ 
+        //     player: this.player,
+        //     checkCollision: this.checkEnemyCollision
+        // })
         this.collisionBlocks.forEach(block => {
             block.draw()
         })

@@ -5,7 +5,9 @@ import fall from '/assets/knight/_Fall.png'
 import crouch from '/assets/knight/_Crouch.png'
 import crouchWalk from '/assets/knight/_CrouchWalk.png'
 import slide from '/assets/knight/_Slide.png'
-import attack from '/assets/knight/_Attack.png'
+import attack from '/assets/knight/_AttackNoMovement.png'
+import attackWalk from '/assets/knight/_Attack2NoMovement.png'
+import changeDirection from '/assets/knight/_TurnAround.png'
 
 const SPRITES = {
     IDLE: {
@@ -54,6 +56,16 @@ const SPRITES = {
         imageSrc: attack,
         columns: 4,
         maxFrames: 4
+    },
+    ATTACKWALK: {
+        imageSrc: attackWalk,
+        columns: 6,
+        maxFrames: 6
+    },
+    CHANGEDIRECTION: {
+        imageSrc: changeDirection,
+        columns: 3,
+        maxFrames: 3
     }
 }
 
@@ -65,14 +77,36 @@ const STATES = {
     CROUCH: 4,
     CROUCHWALK: 5,
     SLIDE: 6,
-    ATTACK: 7
+    ATTACK: 7,
+    ATTACKWALK: 8
 }
 
 class State {
     constructor ({ player, state }) {
         this.player = player
         this.state = state
+        this.fps = 15
+        this.frame = 0
+        this.timer = 0
+        this.interval = 1000 / this.fps
     }
+
+    update = (time) => {
+        if(this.frame >= this.fps) {
+            this.frame = 0;
+        }
+        this.timer += time
+        if (Math.round(this.timer / this.interval) > 1) {
+            this.timer = 0;
+            this.frame++;
+        }
+        // console.log(this.frame, time);
+    }
+
+    // reset = () => {
+    //     this.interval = 1000 / this.fps
+    //     this.timer = 0
+    // }
 }
 
 class Idle extends State {
@@ -89,7 +123,7 @@ class Idle extends State {
             this.player.setSprite(SPRITES.IDLE)
             this.player.velocity.x = 0
             this.player.crouching = false
-            // this.player.stopped = false
+            this.player.onGround
         }
         if (keys.includes('ArrowRight')) {
             this.player.setState(STATES.RUNNING)
@@ -104,7 +138,10 @@ class Idle extends State {
             this.player.setState(STATES.CROUCH)
         }
         if (keys.includes('Space')) {
-            this.player.setState(STATES.ATTACK)
+            this.player.setState(STATES.ATTACKWALK)
+        }
+        if (this.player.velocity.y > 1) {
+            this.player.setState(STATES.FALL)
         }
     }
 }
@@ -130,14 +167,17 @@ class Running extends State {
             this.player.direction = -1
             this.player.velocity.x = 5 * this.player.direction
         }
-        if (keys.length === 0) { 
-            this.player.setState(STATES.IDLE)
-        }
         if (keys.includes('ArrowUp') && this.player.onGround) {
             this.player.setState(STATES.JUMP)
         }
         if (keys.includes('ArrowDown') && this.player.onGround) {
             this.player.setState(STATES.SLIDE)
+        }
+        if (keys.includes('Space')) {
+            this.player.setState(STATES.ATTACKWALK)
+        }
+        if (keys.length === 0) { 
+            this.player.setState(STATES.IDLE)
         }
     }
 }
@@ -162,9 +202,14 @@ class Jump extends State {
         }
         if (keys.includes('ArrowRight')) { 
             this.player.velocity.x = 5
+            this.player.direction = 1
         }
         if (keys.includes('ArrowLeft')) { 
             this.player.velocity.x = -5
+            this.player.direction = -1
+        }
+        if (keys.includes('Space')) {
+            this.player.setState(STATES.ATTACK)
         }
         if (this.player.onGround) {
             this.player.setState(STATES.IDLE)
@@ -181,18 +226,24 @@ class Fall extends State {
     }
 
     input = (keys) => {
-        if(this.player.velocity.y > 0) {
+        if(this.player.velocity.y > 1) {
             this.player.setState(STATES.FALL)
             this.player.setSprite(SPRITES.FALL)
-        }
-        if(this.player.onGround) {
-            this.player.setState(STATES.IDLE)
+            this.player.onGround = false
         }
         if (keys.includes('ArrowRight')) { 
             this.player.velocity.x = 5
+            this.player.direction = 1
         }
         if (keys.includes('ArrowLeft')) { 
             this.player.velocity.x = -5
+            this.player.direction = -1
+        }
+        if (keys.includes('Space')) {
+            this.player.setState(STATES.ATTACK)
+        }
+        if (this.player.onGround) {
+            this.player.setState(STATES.IDLE)
         }
     }
 }
@@ -265,11 +316,10 @@ class Slide extends State {
         if (keys.includes('ArrowDown')) {
             this.player.setState(STATES.SLIDE)
             this.player.setSprite(SPRITES.SLIDE)
-            this.player.velocity.x = 10
+            this.player.velocity.x = 10 * this.player.direction
         }
         if (keys.includes('ArrowRight') && keys.includes('ArrowDown')) { 
             this.player.setState(STATES.SLIDE)
-            this.player.velocity.x -= 1
         }
         if (keys.includes('ArrowLeft') && keys.includes('ArrowDown')) { 
             this.player.setState(STATES.SLIDE)
@@ -289,16 +339,33 @@ class Attack extends State {
     }
 
     input = (keys) => {
-        if (keys.includes('Space')) {
-            this.player.setState(STATES.ATTACK)
-            this.player.setSprite(SPRITES.ATTACK)
-            this.player.attack()
-            this.player.takeDamage()
-        }
-        if (keys.length === 0 && this.player.framesCurrent >= this.player.maxFrames - 1) {
+        this.player.setSprite(SPRITES.ATTACK)
+        this.player.attack()
+        this.player.maxFrames = 1
+        // if (this.player.framesCurrent >= this.player.maxFrames - 1) {
+        // }
+        if (this.player.onGround) {
             this.player.setState(STATES.IDLE)
         }
     }
 }
 
-export { SPRITES ,STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk, Slide, Attack }
+class AttackWalk extends State {
+    constructor (player) {
+        super ({
+            player,
+            state: 'ATTACKWALK'
+        })
+    }
+
+    input = (keys) => {
+        this.player.velocity.x = 0
+        this.player.setSprite(SPRITES.ATTACKWALK)
+        this.player.attack()
+        if (this.player.framesCurrent >= this.player.maxFrames - 1) {
+            this.player.setState(STATES.IDLE)
+        }
+    }
+}
+
+export { SPRITES ,STATES, Idle, Running, Jump, Fall, Crouch, CrouchWalk, Slide, Attack, AttackWalk }
