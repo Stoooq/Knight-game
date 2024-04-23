@@ -594,6 +594,8 @@ canvas.height = 768;
 const fps = 20;
 const fpsDelay = 1000 / fps;
 let time = 0;
+let timer = 0;
+let frames = 0;
 const game = new (0, _gameJsDefault.default)({
     width: 2 * canvas.width,
     height: canvas.height
@@ -601,10 +603,15 @@ const game = new (0, _gameJsDefault.default)({
 let prevTimeStamp = 0;
 const update = (timeStamp)=>{
     requestAnimationFrame(update);
+    if (timer / 10 >= 1) {
+        timer = 0;
+        frames++;
+    }
+    timer++;
     const timeStampDiff = timeStamp - prevTimeStamp || 0;
     prevTimeStamp = timeStamp;
     // console.log(timeStampDiff);
-    game.update(timeStampDiff);
+    game.update(frames);
 };
 update();
 
@@ -696,8 +703,8 @@ class Game {
     }
     checkPlayerCollision = ()=>{
         (0, _utilsJs.checkPlayerCollision)(this.player, this.collisionBlocks);
-        if ((0, _utilsJs.rectangularCollision)(this.player, this.enemy) && this.player.attacking && this.player.framesCurrent === 2) {
-            console.log("cos");
+        if ((0, _utilsJs.rectangularCollision)(this.player, this.enemy) && this.player.attacking && this.player.framesCurrent === 6) {
+            // console.log("cos");
             this.player.attacking = false;
             this.enemy.takeDamage();
         }
@@ -712,19 +719,19 @@ class Game {
         (0, _utilsJs.checkPlayerCollision)(this.enemy, this.collisionBlocks);
         (0, _utilsJs.checkPlayerEnemyPosition)(this.player, this.enemy);
     };
-    update = (time)=>{
+    update = (frames)=>{
         this.background.update(this.player, this.width, this.collisionBlocks);
         this.player.update({
             keys: this.input.keys,
             gameWidth: this.width,
             gameHeight: this.height,
             checkCollision: this.checkPlayerCollision,
-            time: time
+            frames: frames
         });
-        // this.enemy.update({ 
-        //     player: this.player,
-        //     checkCollision: this.checkEnemyCollision
-        // })
+        this.enemy.update({
+            player: this.player,
+            checkCollision: this.checkEnemyCollision
+        });
         this.collisionBlocks.forEach((block)=>{
             block.draw();
         });
@@ -784,6 +791,9 @@ class Player extends (0, _spriteJsDefault.default) {
         this.attacking = false;
         this.health = 100;
         this.stopped = false;
+        this.attackFrames = 0;
+        this.attackRate = 20;
+        this.attackClock = 0;
         //Player attackBox
         this.attackBox = {
             position: {
@@ -807,20 +817,26 @@ class Player extends (0, _spriteJsDefault.default) {
             width: 64
         });
     }
-    update = ({ keys, gameWidth, gameHeight, checkCollision, time })=>{
-        // console.log(this.state);
+    update = ({ keys, gameWidth, gameHeight, checkCollision, frames })=>{
+        if (this.attackClock / 5 >= 1) {
+            this.attackClock = 0;
+            this.attackFrames++;
+        }
+        this.attackClock++;
+        // console.log(this.attackClock, this.attackFrames);
+        // this.attackFrames = frames
         this.state.input(keys);
-        this.state.update(time);
+        this.state.update();
         this.ddraw();
         this.animateFrames();
         this.draw();
         checkCollision();
         this.moving(gameWidth);
         this.checkHealth();
-        // this.healthBar.draw()
-        // this.healthBar.animateFrames()
-        // this.healthBar.position.x = this.position.x
-        // this.healthBar.position.y = this.position.y - 32
+        this.healthBar.draw();
+        this.healthBar.animateFrames();
+        this.healthBar.position.x = this.position.x;
+        this.healthBar.position.y = this.position.y - 32;
         this.attacking;
         this.direction === 1 ? this.attackBox.position.x = this.position.x + this.width / 2 : this.attackBox.position.x = this.position.x + this.width / 2 - this.attackBox.width;
         this.attackBox.position.y = this.position.y;
@@ -863,9 +879,11 @@ class Player extends (0, _spriteJsDefault.default) {
     };
     attack = ()=>{
         this.attacking = true;
-    // setTimeout(() => {
-    //     this.attacking = false
-    // }, 200)
+        this.attackFrames = 0;
+    // if (this.attackFrames - this.attackClock < this.attackRate) return
+    // this.attackClock = this.attackFrames
+    // console.log("koniec atak");
+    // this.attacking = false
     };
     takeDamage = ()=>{
         this.health -= 25;
@@ -911,8 +929,6 @@ var _attackNoMovementPng = require("/assets/knight/_AttackNoMovement.png");
 var _attackNoMovementPngDefault = parcelHelpers.interopDefault(_attackNoMovementPng);
 var _attack2NoMovementPng = require("/assets/knight/_Attack2NoMovement.png");
 var _attack2NoMovementPngDefault = parcelHelpers.interopDefault(_attack2NoMovementPng);
-var _turnAroundPng = require("/assets/knight/_TurnAround.png");
-var _turnAroundPngDefault = parcelHelpers.interopDefault(_turnAroundPng);
 const SPRITES = {
     IDLE: {
         imageSrc: (0, _idlePngDefault.default),
@@ -920,16 +936,9 @@ const SPRITES = {
         maxFrames: 10
     },
     RUNNING: {
-        left: {
-            imageSrc: (0, _runPngDefault.default),
-            columns: 10,
-            maxFrames: 10
-        },
-        right: {
-            imageSrc: (0, _runPngDefault.default),
-            columns: 10,
-            maxFrames: 10
-        }
+        imageSrc: (0, _runPngDefault.default),
+        columns: 10,
+        maxFrames: 10
     },
     JUMP: {
         imageSrc: (0, _jumpPngDefault.default),
@@ -965,11 +974,6 @@ const SPRITES = {
         imageSrc: (0, _attack2NoMovementPngDefault.default),
         columns: 6,
         maxFrames: 6
-    },
-    CHANGEDIRECTION: {
-        imageSrc: (0, _turnAroundPngDefault.default),
-        columns: 3,
-        maxFrames: 3
     }
 };
 const STATES = {
@@ -988,17 +992,25 @@ class State {
         this.player = player;
         this.state = state;
         this.fps = 15;
-        this.frame = 0;
+        this.frame = 1;
         this.timer = 0;
         this.interval = 1000 / this.fps;
     }
-    update = (time)=>{
-        if (this.frame >= this.fps) this.frame = 0;
-        this.timer += time;
-        if (Math.round(this.timer / this.interval) > 1) {
+    update = ()=>{
+        if (this.timer / 5 >= 1) {
             this.timer = 0;
             this.frame++;
         }
+        // console.log(this.timer, this.frame);
+        this.timer++;
+    // if(this.frame >= this.fps) {
+    //     this.frame = 0;
+    // }
+    // this.timer += time
+    // if (Math.round(this.timer / this.interval) > 1) {
+    //     this.timer = 0;
+    //     this.frame++;
+    // }
     // console.log(this.frame, time);
     };
 }
@@ -1035,20 +1047,38 @@ class Running extends State {
     input = (keys)=>{
         if (keys.includes("ArrowRight")) {
             this.player.setState(STATES.RUNNING);
-            this.player.setSprite(SPRITES.RUNNING.right);
-            this.player.direction = 1;
+            this.player.setSprite(SPRITES.RUNNING);
             this.player.velocity.x = 5 * this.player.direction;
+            this.player.direction = 1;
         }
         if (keys.includes("ArrowLeft")) {
             this.player.setState(STATES.RUNNING);
-            this.player.setSprite(SPRITES.RUNNING.left);
-            this.player.direction = -1;
+            this.player.setSprite(SPRITES.RUNNING);
             this.player.velocity.x = 5 * this.player.direction;
+            this.player.direction = -1;
         }
         if (keys.includes("ArrowUp") && this.player.onGround) this.player.setState(STATES.JUMP);
         if (keys.includes("ArrowDown") && this.player.onGround) this.player.setState(STATES.SLIDE);
         if (keys.includes("Space")) this.player.setState(STATES.ATTACKWALK);
         if (keys.length === 0) this.player.setState(STATES.IDLE);
+    };
+}
+class ChangeDirection extends State {
+    constructor(player){
+        super({
+            player,
+            state: "CHANGEDIRECTION"
+        });
+    }
+    input = (keys)=>{
+        // console.log(this.frame, this.frame % 4);
+        this.player.setState(STATES.CHANGEDIRECTION);
+        this.player.setSprite(SPRITES.CHANGEDIRECTION);
+        this.player.velocity.x = 0;
+        if (this.frame % 2 === 0) {
+            this.frame = 1;
+            this.player.setState(STATES.RUNNING);
+        }
     };
 }
 class Jump extends State {
@@ -1187,14 +1217,26 @@ class AttackWalk extends State {
         });
     }
     input = (keys)=>{
+        // console.log(this.player.attackFrames, this.player.attackRate);
+        console.log(this.frame);
+        if (this.frame === 6) {
+            this.frame = 0;
+            this.player.setState(STATES.IDLE);
+            return;
+        }
+        if (this.player.attackFrames < this.player.attackRate) // this.player.setState(STATES.IDLE)
+        return;
         this.player.velocity.x = 0;
         this.player.setSprite(SPRITES.ATTACKWALK);
         this.player.attack();
-        if (this.player.framesCurrent >= this.player.maxFrames - 1) this.player.setState(STATES.IDLE);
+        if (this.player.framesCurrent >= this.player.maxFrames - 2) {
+            console.log("cos");
+            this.player.setState(STATES.IDLE);
+        }
     };
 }
 
-},{"/assets/knight/_Idle.png":"4ZX7k","/assets/knight/_Run.png":"jVsQq","/assets/knight/_Jump.png":"gjPKo","/assets/knight/_Fall.png":"5BSCR","/assets/knight/_Crouch.png":"35ESi","/assets/knight/_CrouchWalk.png":"kj2F4","/assets/knight/_Slide.png":"2FXn6","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/assets/knight/_AttackNoMovement.png":"1P74T","/assets/knight/_Attack2NoMovement.png":"kFXhh","/assets/knight/_TurnAround.png":"dvf1X"}],"4ZX7k":[function(require,module,exports) {
+},{"/assets/knight/_Idle.png":"4ZX7k","/assets/knight/_Run.png":"jVsQq","/assets/knight/_Jump.png":"gjPKo","/assets/knight/_Fall.png":"5BSCR","/assets/knight/_Crouch.png":"35ESi","/assets/knight/_CrouchWalk.png":"kj2F4","/assets/knight/_Slide.png":"2FXn6","/assets/knight/_AttackNoMovement.png":"1P74T","/assets/knight/_Attack2NoMovement.png":"kFXhh","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"4ZX7k":[function(require,module,exports) {
 module.exports = require("68b7f2e7e9d50903").getBundleURL("ksUvU") + "_Idle.e9e6cea5.png" + "?" + Date.now();
 
 },{"68b7f2e7e9d50903":"lgJ39"}],"lgJ39":[function(require,module,exports) {
@@ -1250,7 +1292,13 @@ module.exports = require("d4e58e2d89c229a1").getBundleURL("ksUvU") + "_CrouchWal
 },{"d4e58e2d89c229a1":"lgJ39"}],"2FXn6":[function(require,module,exports) {
 module.exports = require("d46846576fba05b7").getBundleURL("ksUvU") + "_Slide.89906024.png" + "?" + Date.now();
 
-},{"d46846576fba05b7":"lgJ39"}],"gkKU3":[function(require,module,exports) {
+},{"d46846576fba05b7":"lgJ39"}],"1P74T":[function(require,module,exports) {
+module.exports = require("5097cddfa0d4e1c").getBundleURL("ksUvU") + "_AttackNoMovement.09a2b1aa.png" + "?" + Date.now();
+
+},{"5097cddfa0d4e1c":"lgJ39"}],"kFXhh":[function(require,module,exports) {
+module.exports = require("ac95833568402c74").getBundleURL("ksUvU") + "_Attack2NoMovement.6967f613.png" + "?" + Date.now();
+
+},{"ac95833568402c74":"lgJ39"}],"gkKU3":[function(require,module,exports) {
 exports.interopDefault = function(a) {
     return a && a.__esModule ? a : {
         default: a
@@ -1280,16 +1328,7 @@ exports.export = function(dest, destName, get) {
     });
 };
 
-},{}],"1P74T":[function(require,module,exports) {
-module.exports = require("5097cddfa0d4e1c").getBundleURL("ksUvU") + "_AttackNoMovement.09a2b1aa.png" + "?" + Date.now();
-
-},{"5097cddfa0d4e1c":"lgJ39"}],"kFXhh":[function(require,module,exports) {
-module.exports = require("ac95833568402c74").getBundleURL("ksUvU") + "_Attack2NoMovement.6967f613.png" + "?" + Date.now();
-
-},{"ac95833568402c74":"lgJ39"}],"dvf1X":[function(require,module,exports) {
-module.exports = require("16e7ff5f831c443e").getBundleURL("ksUvU") + "_TurnAround.28c3575b.png" + "?" + Date.now();
-
-},{"16e7ff5f831c443e":"lgJ39"}],"9lzH1":[function(require,module,exports) {
+},{}],"9lzH1":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 const canvas = document.querySelector("canvas");
@@ -1501,7 +1540,6 @@ const checkPlayerCollision = (player, collisionBlocks)=>{
         }
         //top
         if (player.position.y + player.velocity.y < block.position.y + block.height && player.position.y + player.height > block.position.y + block.height && player.position.x < block.position.x + block.width && player.position.x + player.width > block.position.x) {
-            console.log(player.velocity.y);
             if (-player.velocity.y * 0.2 > 1) player.velocity.y = -player.velocity.y * 0.2;
             else player.velocity.y = 1;
             player.onGround = false;
@@ -2219,7 +2257,7 @@ class RenderKeys {
 }
 exports.default = RenderKeys;
 
-},{"./Sprite":"9lzH1","/assets/keys/arrowUp.png":"5ZcCS","/assets/keys/arrowUpPressed.png":"ewwrp","/assets/keys/arrowLeft.png":"gnVQP","/assets/keys/arrowLeftPressed.png":"9VKJr","/assets/keys/arrowDown.png":"e5tQE","/assets/keys/arrowDownPressed.png":"39CkS","/assets/keys/arrowRight.png":"ar8Q2","/assets/keys/arrowRightPressed.png":"5WqrE","/assets/keys/skillBox.png":"lYe7Q","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/assets/keys/space.png":"bg7FV","/assets/keys/spacePressed.png":"7wUJ3"}],"5ZcCS":[function(require,module,exports) {
+},{"./Sprite":"9lzH1","/assets/keys/arrowUp.png":"5ZcCS","/assets/keys/arrowUpPressed.png":"ewwrp","/assets/keys/arrowLeft.png":"gnVQP","/assets/keys/arrowLeftPressed.png":"9VKJr","/assets/keys/arrowDown.png":"e5tQE","/assets/keys/arrowDownPressed.png":"39CkS","/assets/keys/arrowRight.png":"ar8Q2","/assets/keys/arrowRightPressed.png":"5WqrE","/assets/keys/space.png":"bg7FV","/assets/keys/spacePressed.png":"7wUJ3","/assets/keys/skillBox.png":"lYe7Q","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"5ZcCS":[function(require,module,exports) {
 module.exports = require("e46a8565b83fbbde").getBundleURL("ksUvU") + "arrowUp.2db42674.png" + "?" + Date.now();
 
 },{"e46a8565b83fbbde":"lgJ39"}],"ewwrp":[function(require,module,exports) {
@@ -2243,15 +2281,15 @@ module.exports = require("39bcd54dc0a97ec7").getBundleURL("ksUvU") + "arrowRight
 },{"39bcd54dc0a97ec7":"lgJ39"}],"5WqrE":[function(require,module,exports) {
 module.exports = require("1317a5136b109d93").getBundleURL("ksUvU") + "arrowRightPressed.b3e0bc05.png" + "?" + Date.now();
 
-},{"1317a5136b109d93":"lgJ39"}],"lYe7Q":[function(require,module,exports) {
-module.exports = require("4020917efff96794").getBundleURL("ksUvU") + "skillBox.1759bb35.png" + "?" + Date.now();
-
-},{"4020917efff96794":"lgJ39"}],"bg7FV":[function(require,module,exports) {
+},{"1317a5136b109d93":"lgJ39"}],"bg7FV":[function(require,module,exports) {
 module.exports = require("e2a9a8d96c81c55f").getBundleURL("ksUvU") + "space.0a01e446.png" + "?" + Date.now();
 
 },{"e2a9a8d96c81c55f":"lgJ39"}],"7wUJ3":[function(require,module,exports) {
 module.exports = require("7cdbec49a81f4f86").getBundleURL("ksUvU") + "spacePressed.bec887cc.png" + "?" + Date.now();
 
-},{"7cdbec49a81f4f86":"lgJ39"}]},["fQFrJ","1Z4Rq"], "1Z4Rq", "parcelRequire1020")
+},{"7cdbec49a81f4f86":"lgJ39"}],"lYe7Q":[function(require,module,exports) {
+module.exports = require("4020917efff96794").getBundleURL("ksUvU") + "skillBox.1759bb35.png" + "?" + Date.now();
+
+},{"4020917efff96794":"lgJ39"}]},["fQFrJ","1Z4Rq"], "1Z4Rq", "parcelRequire1020")
 
 //# sourceMappingURL=index.5d9dacde.js.map

@@ -35,6 +35,9 @@ class Player extends Sprite {
         this.attacking = false
         this.health = 100
         this.stopped = false
+        this.attackFrames = 0
+        this.attackRate = 20
+        this.attackClock = 0
 
         //Player attackBox
         this.attackBox = {
@@ -61,10 +64,16 @@ class Player extends Sprite {
         })
     }
 
-    update = ({ keys, gameWidth, gameHeight, checkCollision, time }) => {
-        // console.log(this.state);
+    update = ({ keys, gameWidth, gameHeight, checkCollision, frames }) => {
+        if (this.attackClock / 5 >= 1) {
+            this.attackClock = 0
+            this.attackFrames++
+        }
+        this.attackClock++
+        // console.log(this.attackClock, this.attackFrames);
+        // this.attackFrames = frames
         this.state.input(keys)
-        this.state.update(time)
+        this.state.update()
         this.ddraw()
         this.animateFrames()
         this.draw()
@@ -72,10 +81,10 @@ class Player extends Sprite {
         this.moving(gameWidth)
         this.checkHealth()
 
-        // this.healthBar.draw()
-        // this.healthBar.animateFrames()
-        // this.healthBar.position.x = this.position.x
-        // this.healthBar.position.y = this.position.y - 32
+        this.healthBar.draw()
+        this.healthBar.animateFrames()
+        this.healthBar.position.x = this.position.x
+        this.healthBar.position.y = this.position.y - 32
 
         if (this.attacking) {
             // c.fillStyle = 'red'
@@ -142,9 +151,11 @@ class Player extends Sprite {
 
     attack = () => {
         this.attacking = true
-        // setTimeout(() => {
-        //     this.attacking = false
-        // }, 200)
+        this.attackFrames = 0
+        // if (this.attackFrames - this.attackClock < this.attackRate) return
+        // this.attackClock = this.attackFrames
+        // console.log("koniec atak");
+        // this.attacking = false
     }
 
     takeDamage = () => {

@@ -30,7 +30,6 @@ const checkPlayerCollision = (player, collisionBlocks) => {
             player.position.y + player.height > block.position.y + block.height &&
             player.position.x < block.position.x + block.width &&
             player.position.x + player.width > block.position.x) {
-                console.log(player.velocity.y);
                 if (-player.velocity.y * 0.2 > 1) {
                     player.velocity.y = -player.velocity.y * 0.2
                 } else {

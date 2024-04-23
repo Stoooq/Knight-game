@@ -7,7 +7,6 @@ import crouchWalk from '/assets/knight/_CrouchWalk.png'
 import slide from '/assets/knight/_Slide.png'
 import attack from '/assets/knight/_AttackNoMovement.png'
 import attackWalk from '/assets/knight/_Attack2NoMovement.png'
-import changeDirection from '/assets/knight/_TurnAround.png'
 
 const SPRITES = {
     IDLE: {
@@ -16,16 +15,9 @@ const SPRITES = {
         maxFrames: 10
     },
     RUNNING: {
-        left: {
-            imageSrc: run,
-            columns: 10,
-            maxFrames: 10
-        },
-        right: {
-            imageSrc: run,
-            columns: 10,
-            maxFrames: 10
-        }
+        imageSrc: run,
+        columns: 10,
+        maxFrames: 10
     },
     JUMP: {
         imageSrc: jump,
@@ -61,11 +53,6 @@ const SPRITES = {
         imageSrc: attackWalk,
         columns: 6,
         maxFrames: 6
-    },
-    CHANGEDIRECTION: {
-        imageSrc: changeDirection,
-        columns: 3,
-        maxFrames: 3
     }
 }
 
@@ -86,20 +73,26 @@ class State {
         this.player = player
         this.state = state
         this.fps = 15
-        this.frame = 0
+        this.frame = 1
         this.timer = 0
         this.interval = 1000 / this.fps
     }
 
-    update = (time) => {
-        if(this.frame >= this.fps) {
-            this.frame = 0;
+    update = () => {
+        if ((this.timer / 5) >= 1) {
+            this.timer = 0
+            this.frame++
         }
-        this.timer += time
-        if (Math.round(this.timer / this.interval) > 1) {
-            this.timer = 0;
-            this.frame++;
-        }
+        // console.log(this.timer, this.frame);
+        this.timer++
+        // if(this.frame >= this.fps) {
+        //     this.frame = 0;
+        // }
+        // this.timer += time
+        // if (Math.round(this.timer / this.interval) > 1) {
+        //     this.timer = 0;
+        //     this.frame++;
+        // }
         // console.log(this.frame, time);
     }
 
@@ -126,7 +119,7 @@ class Idle extends State {
             this.player.onGround
         }
         if (keys.includes('ArrowRight')) {
-            this.player.setState(STATES.RUNNING)
+                this.player.setState(STATES.RUNNING)
         }
         if (keys.includes('ArrowLeft')) { 
             this.player.setState(STATES.RUNNING)
@@ -155,17 +148,17 @@ class Running extends State {
     }
 
     input = (keys) => {
-        if (keys.includes('ArrowRight')) { 
+        if (keys.includes('ArrowRight')) {
             this.player.setState(STATES.RUNNING)
-            this.player.setSprite(SPRITES.RUNNING.right)
-            this.player.direction = 1
+            this.player.setSprite(SPRITES.RUNNING)
             this.player.velocity.x = 5 * this.player.direction
+            this.player.direction = 1
         }
         if (keys.includes('ArrowLeft')) { 
             this.player.setState(STATES.RUNNING)
-            this.player.setSprite(SPRITES.RUNNING.left)
-            this.player.direction = -1
+            this.player.setSprite(SPRITES.RUNNING)
             this.player.velocity.x = 5 * this.player.direction
+            this.player.direction = -1
         }
         if (keys.includes('ArrowUp') && this.player.onGround) {
             this.player.setState(STATES.JUMP)
@@ -178,6 +171,26 @@ class Running extends State {
         }
         if (keys.length === 0) { 
             this.player.setState(STATES.IDLE)
+        }
+    }
+}
+
+class ChangeDirection extends State {
+    constructor (player) {
+        super ({
+            player,
+            state: 'CHANGEDIRECTION'
+        })
+    }
+
+    input = (keys) => {
+        // console.log(this.frame, this.frame % 4);
+        this.player.setState(STATES.CHANGEDIRECTION)
+        this.player.setSprite(SPRITES.CHANGEDIRECTION)
+        this.player.velocity.x = 0
+        if (this.frame % 2 === 0) {
+            this.frame = 1
+            this.player.setState(STATES.RUNNING)
         }
     }
 }
@@ -359,10 +372,22 @@ class AttackWalk extends State {
     }
 
     input = (keys) => {
+        // console.log(this.player.attackFrames, this.player.attackRate);
+        console.log(this.frame);
+        if (this.frame === 6) {
+            this.frame = 0
+            this.player.setState(STATES.IDLE)
+            return
+        }
+        if (this.player.attackFrames < this.player.attackRate) {
+            // this.player.setState(STATES.IDLE)
+            return
+        }
         this.player.velocity.x = 0
         this.player.setSprite(SPRITES.ATTACKWALK)
         this.player.attack()
-        if (this.player.framesCurrent >= this.player.maxFrames - 1) {
+        if (this.player.framesCurrent >= this.player.maxFrames - 2) {
+            console.log("cos");
             this.player.setState(STATES.IDLE)
         }
     }

@@ -22,8 +22,8 @@ body {
   align-items: center;
   flex-direction: column;
   width: 1024px;
-  height: 768px;
-  background-image: url("/assets/paperMap.png");
+  height: 704px;
+  background-image: url("/assets/backgroundPaper.png");
   image-rendering: pixelated;
   background-size: cover;
   background-repeat: no-repeat;

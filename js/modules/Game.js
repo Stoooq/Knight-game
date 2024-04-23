@@ -80,8 +80,8 @@ class Game {
 
     checkPlayerCollision = () => {
         checkPlayerCollision(this.player, this.collisionBlocks)
-        if (rectangularCollision(this.player, this.enemy) && this.player.attacking && this.player.framesCurrent === 2) {
-            console.log("cos");
+        if (rectangularCollision(this.player, this.enemy) && this.player.attacking && this.player.framesCurrent === 6) {
+            // console.log("cos");
             this.player.attacking = false
             this.enemy.takeDamage()
         }
@@ -97,19 +97,19 @@ class Game {
         checkPlayerEnemyPosition(this.player, this.enemy)
     }
 
-    update = (time) => {
+    update = (frames) => {
         this.background.update(this.player, this.width, this.collisionBlocks)
         this.player.update({
             keys: this.input.keys,
             gameWidth: this.width,
             gameHeight: this.height,
             checkCollision: this.checkPlayerCollision,
-            time: time
+            frames: frames
         })
-        // this.enemy.update({ 
-        //     player: this.player,
-        //     checkCollision: this.checkEnemyCollision
-        // })
+        this.enemy.update({ 
+            player: this.player,
+            checkCollision: this.checkEnemyCollision
+        })
         this.collisionBlocks.forEach(block => {
             block.draw()
         })
