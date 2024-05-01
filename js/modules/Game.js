@@ -52,6 +52,9 @@ class Game {
                 }
             })
         })
+        this.newEnemyDelay = 20
+        this.newEnemyClock = 0
+        this.enemies = []
         this.enemy = new Enemy({
             position: {
                 x: 300,
@@ -80,21 +83,44 @@ class Game {
 
     checkPlayerCollision = () => {
         checkPlayerCollision(this.player, this.collisionBlocks)
-        if (rectangularCollision(this.player, this.enemy) && this.player.attacking && this.player.framesCurrent === 6) {
-            // console.log("cos");
+        if (rectangularCollision(this.player, this.enemy) && this.player.attacking && this.player.framesCurrent === 3) {
             this.player.attacking = false
             this.enemy.takeDamage()
+            this.renderKeys.addScore = true
         }
-        // let collision = checkPlayerCollision(this.player, this.collisionBlocks)
-        // switch (collision) {
-        //     case 1:
-        //         console.log('bottom');
-        //         break
-        // }
     }
+
     checkEnemyCollision = () => {
         checkPlayerCollision(this.enemy, this.collisionBlocks)
         checkPlayerEnemyPosition(this.player, this.enemy)
+        if (rectangularCollision(this.enemy, this.player) && this.enemy.attacking && this.enemy.framesCurrent === 3) {
+            this.enemy.attacking = false
+            this.player.takeDamage()
+        }
+    }
+
+    renderEnemies = (frames) => {
+        if (frames - this.newEnemyClock > Math.round(this.newEnemyDelay)) {
+            const newEnemy = new Enemy({
+                position: {
+                    x: 300,
+                    y: 200
+                },
+                velocity: {
+                    x: 0,
+                    y: 0
+                },
+                width: 70,
+                height: 35,
+                imageSrc: enemyImg,
+                scale: 3,
+                columns: 8,
+                maxFrames: 8
+            })
+            this.enemies.push(newEnemy)
+            this.newEnemyClock = frames
+            this.newEnemyDelay = 2/Math.log(frames) * 200, frames
+        }
     }
 
     update = (frames) => {
@@ -106,9 +132,20 @@ class Game {
             checkCollision: this.checkPlayerCollision,
             frames: frames
         })
-        this.enemy.update({ 
+        this.enemies.forEach(enemy => {
+            enemy.update({
+                keys: this.input.keys,
+                player: this.player,
+                checkCollision: this.checkEnemyCollision,
+                frames: frames
+            })
+        })
+        // this.renderEnemies(frames)
+        this.enemy.update({
+            keys: this.input.keys,
             player: this.player,
-            checkCollision: this.checkEnemyCollision
+            checkCollision: this.checkEnemyCollision,
+            frames: frames
         })
         this.collisionBlocks.forEach(block => {
             block.draw()

@@ -1,7 +1,8 @@
 import bg1 from '/assets/oak_woods_v1.0/background/background_layer_1.png'
 import bg2 from '/assets/oak_woods_v1.0/background/background_layer_2.png'
 import bg3 from '/assets/oak_woods_v1.0/background/background_layer_3.png'
-import bgBlocks from '/assets/newmap.png'
+import bgBlocks from '/assets/map.png'
+import paperBackground from "/assets/backgroundPaper.png"
 
 const canvas = document.querySelector('canvas')
 const c = canvas.getContext('2d')
@@ -17,6 +18,8 @@ class Background {
         this.image3.src = bg3
         this.image4 = new Image()
         this.image4.src = bgBlocks
+        this.image5 = new Image()
+        this.image5.src = paperBackground
         this.positionX1 = 0
         this.positionX2 = 0
         this.positionX3 = 0
@@ -59,12 +62,15 @@ class Background {
         //         cos += i * canvas.width
         //     }
         // }
+        
+        c.drawImage(this.image5, 0, 0, canvas.width, 704)
         c.drawImage(this.image1, this.positionX1, 0, canvas.width, 576)
         c.drawImage(this.image1, this.positionX1 + canvas.width, 0, canvas.width, 576)
         c.drawImage(this.image2, this.positionX2, 0, canvas.width, 576)
         c.drawImage(this.image2, this.positionX2 + canvas.width, 0, canvas.width, 576)
         c.drawImage(this.image3, this.positionX3, 0, canvas.width, 576)
         c.drawImage(this.image3, this.positionX3 + canvas.width, 0, canvas.width, 576)
+        c.drawImage(this.image4, this.positionX4, 0, 3072, 576)
         c.drawImage(this.image4, this.positionX4, 0, 3072, 576)
     }
 }

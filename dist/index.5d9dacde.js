@@ -603,14 +603,13 @@ const game = new (0, _gameJsDefault.default)({
 let prevTimeStamp = 0;
 const update = (timeStamp)=>{
     requestAnimationFrame(update);
-    if (timer / 10 >= 1) {
+    if (timer / 5 >= 1) {
         timer = 0;
         frames++;
     }
     timer++;
     const timeStampDiff = timeStamp - prevTimeStamp || 0;
     prevTimeStamp = timeStamp;
-    // console.log(timeStampDiff);
     game.update(frames);
 };
 update();
@@ -676,6 +675,9 @@ class Game {
                 }));
             });
         });
+        this.newEnemyDelay = 20;
+        this.newEnemyClock = 0;
+        this.enemies = [];
         this.enemy = new (0, _enemyJsDefault.default)({
             position: {
                 x: 300,
@@ -703,21 +705,42 @@ class Game {
     }
     checkPlayerCollision = ()=>{
         (0, _utilsJs.checkPlayerCollision)(this.player, this.collisionBlocks);
-        if ((0, _utilsJs.rectangularCollision)(this.player, this.enemy) && this.player.attacking && this.player.framesCurrent === 6) {
-            // console.log("cos");
+        if ((0, _utilsJs.rectangularCollision)(this.player, this.enemy) && this.player.attacking && this.player.framesCurrent === 3) {
             this.player.attacking = false;
             this.enemy.takeDamage();
+            this.renderKeys.addScore = true;
         }
-    // let collision = checkPlayerCollision(this.player, this.collisionBlocks)
-    // switch (collision) {
-    //     case 1:
-    //         console.log('bottom');
-    //         break
-    // }
     };
     checkEnemyCollision = ()=>{
         (0, _utilsJs.checkPlayerCollision)(this.enemy, this.collisionBlocks);
         (0, _utilsJs.checkPlayerEnemyPosition)(this.player, this.enemy);
+        if ((0, _utilsJs.rectangularCollision)(this.enemy, this.player) && this.enemy.attacking && this.enemy.framesCurrent === 3) {
+            this.enemy.attacking = false;
+            this.player.takeDamage();
+        }
+    };
+    renderEnemies = (frames)=>{
+        if (frames - this.newEnemyClock > Math.round(this.newEnemyDelay)) {
+            const newEnemy = new (0, _enemyJsDefault.default)({
+                position: {
+                    x: 300,
+                    y: 200
+                },
+                velocity: {
+                    x: 0,
+                    y: 0
+                },
+                width: 70,
+                height: 35,
+                imageSrc: (0, _slimeIdlePngDefault.default),
+                scale: 3,
+                columns: 8,
+                maxFrames: 8
+            });
+            this.enemies.push(newEnemy);
+            this.newEnemyClock = frames;
+            this.newEnemyDelay = 2 / Math.log(frames) * 200, frames;
+        }
     };
     update = (frames)=>{
         this.background.update(this.player, this.width, this.collisionBlocks);
@@ -728,9 +751,20 @@ class Game {
             checkCollision: this.checkPlayerCollision,
             frames: frames
         });
+        this.enemies.forEach((enemy)=>{
+            enemy.update({
+                keys: this.input.keys,
+                player: this.player,
+                checkCollision: this.checkEnemyCollision,
+                frames: frames
+            });
+        });
+        // this.renderEnemies(frames)
         this.enemy.update({
+            keys: this.input.keys,
             player: this.player,
-            checkCollision: this.checkEnemyCollision
+            checkCollision: this.checkEnemyCollision,
+            frames: frames
         });
         this.collisionBlocks.forEach((block)=>{
             block.draw();
@@ -791,8 +825,8 @@ class Player extends (0, _spriteJsDefault.default) {
         this.attacking = false;
         this.health = 100;
         this.stopped = false;
-        this.attackFrames = 0;
-        this.attackRate = 20;
+        this.frames = 0;
+        this.attackRate = 2;
         this.attackClock = 0;
         //Player attackBox
         this.attackBox = {
@@ -818,15 +852,8 @@ class Player extends (0, _spriteJsDefault.default) {
         });
     }
     update = ({ keys, gameWidth, gameHeight, checkCollision, frames })=>{
-        if (this.attackClock / 5 >= 1) {
-            this.attackClock = 0;
-            this.attackFrames++;
-        }
-        this.attackClock++;
-        // console.log(this.attackClock, this.attackFrames);
-        // this.attackFrames = frames
+        this.frames = frames;
         this.state.input(keys);
-        this.state.update();
         this.ddraw();
         this.animateFrames();
         this.draw();
@@ -837,7 +864,10 @@ class Player extends (0, _spriteJsDefault.default) {
         this.healthBar.animateFrames();
         this.healthBar.position.x = this.position.x;
         this.healthBar.position.y = this.position.y - 32;
-        this.attacking;
+        if (this.attacking) {
+            c.fillStyle = "red";
+            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height);
+        }
         this.direction === 1 ? this.attackBox.position.x = this.position.x + this.width / 2 : this.attackBox.position.x = this.position.x + this.width / 2 - this.attackBox.width;
         this.attackBox.position.y = this.position.y;
     };
@@ -849,7 +879,7 @@ class Player extends (0, _spriteJsDefault.default) {
         this.previousState = this.state;
         this.state = this.states[state];
         if (this.previousState !== this.state) this.framesCurrent = 0;
-    // this.state.reset()
+        this.state.onSetState();
     };
     setSprite = (sprite)=>{
         this.image.src = sprite.imageSrc;
@@ -877,13 +907,12 @@ class Player extends (0, _spriteJsDefault.default) {
         this.stopped = false;
     // this.position.x = Math.round(this.position.x)
     };
+    isAbleToAttack = ()=>{
+        return this.frames - this.attackClock > this.attackRate;
+    };
     attack = ()=>{
         this.attacking = true;
-        this.attackFrames = 0;
-    // if (this.attackFrames - this.attackClock < this.attackRate) return
-    // this.attackClock = this.attackFrames
-    // console.log("koniec atak");
-    // this.attacking = false
+        this.attackClock = this.frames;
     };
     takeDamage = ()=>{
         this.health -= 25;
@@ -991,27 +1020,23 @@ class State {
     constructor({ player, state }){
         this.player = player;
         this.state = state;
-        this.fps = 15;
-        this.frame = 1;
-        this.timer = 0;
-        this.interval = 1000 / this.fps;
     }
-    update = ()=>{
-        if (this.timer / 5 >= 1) {
-            this.timer = 0;
-            this.frame++;
+    onSetState = ()=>{};
+}
+class Fly extends State {
+    constructor(...args){
+        super(...args);
+    }
+    flyInput = (keys)=>{
+        if (keys.includes("ArrowRight")) {
+            this.player.velocity.x = 5;
+            this.player.direction = 1;
         }
-        // console.log(this.timer, this.frame);
-        this.timer++;
-    // if(this.frame >= this.fps) {
-    //     this.frame = 0;
-    // }
-    // this.timer += time
-    // if (Math.round(this.timer / this.interval) > 1) {
-    //     this.timer = 0;
-    //     this.frame++;
-    // }
-    // console.log(this.frame, time);
+        if (keys.includes("ArrowLeft")) {
+            this.player.velocity.x = -5;
+            this.player.direction = -1;
+        }
+        if (!keys.includes("ArrowRight") && !keys.includes("ArrowLeft")) this.player.velocity.x = 0;
     };
 }
 class Idle extends State {
@@ -1033,7 +1058,7 @@ class Idle extends State {
         if (keys.includes("ArrowLeft")) this.player.setState(STATES.RUNNING);
         if (keys.includes("ArrowUp") && this.player.onGround) this.player.setState(STATES.JUMP);
         if (keys.includes("ArrowDown")) this.player.setState(STATES.CROUCH);
-        if (keys.includes("Space")) this.player.setState(STATES.ATTACKWALK);
+        if (keys.includes("Space") && this.player.isAbleToAttack()) this.player.setState(STATES.ATTACKWALK);
         if (this.player.velocity.y > 1) this.player.setState(STATES.FALL);
     };
 }
@@ -1059,29 +1084,11 @@ class Running extends State {
         }
         if (keys.includes("ArrowUp") && this.player.onGround) this.player.setState(STATES.JUMP);
         if (keys.includes("ArrowDown") && this.player.onGround) this.player.setState(STATES.SLIDE);
-        if (keys.includes("Space")) this.player.setState(STATES.ATTACKWALK);
+        if (keys.includes("Space") && this.player.isAbleToAttack()) this.player.setState(STATES.ATTACKWALK);
         if (keys.length === 0) this.player.setState(STATES.IDLE);
     };
 }
-class ChangeDirection extends State {
-    constructor(player){
-        super({
-            player,
-            state: "CHANGEDIRECTION"
-        });
-    }
-    input = (keys)=>{
-        // console.log(this.frame, this.frame % 4);
-        this.player.setState(STATES.CHANGEDIRECTION);
-        this.player.setSprite(SPRITES.CHANGEDIRECTION);
-        this.player.velocity.x = 0;
-        if (this.frame % 2 === 0) {
-            this.frame = 1;
-            this.player.setState(STATES.RUNNING);
-        }
-    };
-}
-class Jump extends State {
+class Jump extends Fly {
     constructor(player){
         super({
             player,
@@ -1096,19 +1103,12 @@ class Jump extends State {
             this.player.onGround = false;
         }
         if (this.player.velocity.y > 0) this.player.setState(STATES.FALL);
-        if (keys.includes("ArrowRight")) {
-            this.player.velocity.x = 5;
-            this.player.direction = 1;
-        }
-        if (keys.includes("ArrowLeft")) {
-            this.player.velocity.x = -5;
-            this.player.direction = -1;
-        }
-        if (keys.includes("Space")) this.player.setState(STATES.ATTACK);
+        if (keys.includes("Space") && this.player.isAbleToAttack()) this.player.setState(STATES.ATTACK);
         if (this.player.onGround) this.player.setState(STATES.IDLE);
+        this.flyInput(keys);
     };
 }
-class Fall extends State {
+class Fall extends Fly {
     constructor(player){
         super({
             player,
@@ -1121,16 +1121,9 @@ class Fall extends State {
             this.player.setSprite(SPRITES.FALL);
             this.player.onGround = false;
         }
-        if (keys.includes("ArrowRight")) {
-            this.player.velocity.x = 5;
-            this.player.direction = 1;
-        }
-        if (keys.includes("ArrowLeft")) {
-            this.player.velocity.x = -5;
-            this.player.direction = -1;
-        }
-        if (keys.includes("Space")) this.player.setState(STATES.ATTACK);
+        if (keys.includes("Space") && this.player.isAbleToAttack()) this.player.setState(STATES.ATTACK);
         if (this.player.onGround) this.player.setState(STATES.IDLE);
+        this.flyInput(keys);
     };
 }
 class Crouch extends State {
@@ -1193,7 +1186,7 @@ class Slide extends State {
         if (!keys.includes("ArrowDown")) this.player.setState(STATES.IDLE);
     };
 }
-class Attack extends State {
+class Attack extends Fly {
     constructor(player){
         super({
             player,
@@ -1202,11 +1195,13 @@ class Attack extends State {
     }
     input = (keys)=>{
         this.player.setSprite(SPRITES.ATTACK);
-        this.player.attack();
-        this.player.maxFrames = 1;
-        // if (this.player.framesCurrent >= this.player.maxFrames - 1) {
-        // }
-        if (this.player.onGround) this.player.setState(STATES.IDLE);
+        if (!this.player.onGround) this.player.maxFrames = 1;
+        if (this.player.onGround && !this.player.attacking) this.player.attack();
+        if (this.player.onGround && this.player.framesCurrent >= this.player.maxFrames - 1) {
+            this.player.setState(STATES.IDLE);
+            this.player.attacking = false;
+        }
+        this.flyInput(keys);
     };
 }
 class AttackWalk extends State {
@@ -1216,22 +1211,15 @@ class AttackWalk extends State {
             state: "ATTACKWALK"
         });
     }
-    input = (keys)=>{
-        // console.log(this.player.attackFrames, this.player.attackRate);
-        console.log(this.frame);
-        if (this.frame === 6) {
-            this.frame = 0;
-            this.player.setState(STATES.IDLE);
-            return;
-        }
-        if (this.player.attackFrames < this.player.attackRate) // this.player.setState(STATES.IDLE)
-        return;
+    onSetState = ()=>{
+        this.player.attack();
+    };
+    input = ()=>{
         this.player.velocity.x = 0;
         this.player.setSprite(SPRITES.ATTACKWALK);
-        this.player.attack();
-        if (this.player.framesCurrent >= this.player.maxFrames - 2) {
-            console.log("cos");
+        if (this.player.framesCurrent >= this.player.maxFrames - 1) {
             this.player.setState(STATES.IDLE);
+            this.player.attacking = false;
         }
     };
 }
@@ -1419,8 +1407,10 @@ var _backgroundLayer2Png = require("/assets/oak_woods_v1.0/background/background
 var _backgroundLayer2PngDefault = parcelHelpers.interopDefault(_backgroundLayer2Png);
 var _backgroundLayer3Png = require("/assets/oak_woods_v1.0/background/background_layer_3.png");
 var _backgroundLayer3PngDefault = parcelHelpers.interopDefault(_backgroundLayer3Png);
-var _newmapPng = require("/assets/newmap.png");
-var _newmapPngDefault = parcelHelpers.interopDefault(_newmapPng);
+var _mapPng = require("/assets/map.png");
+var _mapPngDefault = parcelHelpers.interopDefault(_mapPng);
+var _backgroundPaperPng = require("/assets/backgroundPaper.png");
+var _backgroundPaperPngDefault = parcelHelpers.interopDefault(_backgroundPaperPng);
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 class Background {
@@ -1433,7 +1423,9 @@ class Background {
         this.image3 = new Image();
         this.image3.src = (0, _backgroundLayer3PngDefault.default);
         this.image4 = new Image();
-        this.image4.src = (0, _newmapPngDefault.default);
+        this.image4.src = (0, _mapPngDefault.default);
+        this.image5 = new Image();
+        this.image5.src = (0, _backgroundPaperPngDefault.default);
         this.positionX1 = 0;
         this.positionX2 = 0;
         this.positionX3 = 0;
@@ -1472,6 +1464,7 @@ class Background {
         //         cos += i * canvas.width
         //     }
         // }
+        c.drawImage(this.image5, 0, 0, canvas.width, 704);
         c.drawImage(this.image1, this.positionX1, 0, canvas.width, 576);
         c.drawImage(this.image1, this.positionX1 + canvas.width, 0, canvas.width, 576);
         c.drawImage(this.image2, this.positionX2, 0, canvas.width, 576);
@@ -1479,11 +1472,12 @@ class Background {
         c.drawImage(this.image3, this.positionX3, 0, canvas.width, 576);
         c.drawImage(this.image3, this.positionX3 + canvas.width, 0, canvas.width, 576);
         c.drawImage(this.image4, this.positionX4, 0, 3072, 576);
+        c.drawImage(this.image4, this.positionX4, 0, 3072, 576);
     };
 }
 exports.default = Background;
 
-},{"/assets/oak_woods_v1.0/background/background_layer_1.png":"3BmuG","/assets/oak_woods_v1.0/background/background_layer_2.png":"38Fl3","/assets/oak_woods_v1.0/background/background_layer_3.png":"6jIh7","/assets/newmap.png":"4PJv6","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"3BmuG":[function(require,module,exports) {
+},{"/assets/oak_woods_v1.0/background/background_layer_1.png":"3BmuG","/assets/oak_woods_v1.0/background/background_layer_2.png":"38Fl3","/assets/oak_woods_v1.0/background/background_layer_3.png":"6jIh7","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/assets/map.png":"djRla","/assets/backgroundPaper.png":"f6Wch"}],"3BmuG":[function(require,module,exports) {
 module.exports = require("a20d70d47135f1fe").getBundleURL("ksUvU") + "background_layer_1.ecfd8cc7.png" + "?" + Date.now();
 
 },{"a20d70d47135f1fe":"lgJ39"}],"38Fl3":[function(require,module,exports) {
@@ -1492,10 +1486,13 @@ module.exports = require("9d60df3aeb5e8e6f").getBundleURL("ksUvU") + "background
 },{"9d60df3aeb5e8e6f":"lgJ39"}],"6jIh7":[function(require,module,exports) {
 module.exports = require("7290886cc7596598").getBundleURL("ksUvU") + "background_layer_3.7bd6e3ce.png" + "?" + Date.now();
 
-},{"7290886cc7596598":"lgJ39"}],"4PJv6":[function(require,module,exports) {
-module.exports = require("add67498e4348923").getBundleURL("ksUvU") + "newmap.7a6dc079.png" + "?" + Date.now();
+},{"7290886cc7596598":"lgJ39"}],"djRla":[function(require,module,exports) {
+module.exports = require("244fac9549f4e7ff").getBundleURL("ksUvU") + "map.7ac7699d.png" + "?" + Date.now();
 
-},{"add67498e4348923":"lgJ39"}],"hHCv3":[function(require,module,exports) {
+},{"244fac9549f4e7ff":"lgJ39"}],"f6Wch":[function(require,module,exports) {
+module.exports = require("d26903f88051d637").getBundleURL("ksUvU") + "backgroundPaper.bf0ceec9.png" + "?" + Date.now();
+
+},{"d26903f88051d637":"lgJ39"}],"hHCv3":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 const canvas = document.querySelector("canvas");
@@ -1547,17 +1544,28 @@ const checkPlayerCollision = (player, collisionBlocks)=>{
     });
 };
 const checkPlayerEnemyPosition = (player, enemy)=>{
-    if (player.position.x + player.width * 0.6 < enemy.position.x) {
+    if (player.position.x + player.width * 0.6 < enemy.position.x && enemy.state.state === "RUNNING") {
         enemy.velocity.x = -1.5;
         enemy.direction = 1;
     }
-    if (player.position.x > enemy.position.x + enemy.width * 0.6) {
+    if (player.position.x > enemy.position.x + enemy.width * 0.6 && enemy.state.state === "RUNNING") {
         enemy.velocity.x = 1.5;
         enemy.direction = -1;
     }
     if (player.position.y + player.height < enemy.position.y && player.position.x < enemy.position.x + enemy.width * 0.6 && player.position.x + player.width * 0.6 > enemy.position.x && enemy.onGround) {
         enemy.onGround = false;
-        enemy.velocity.y = -15;
+        enemy.velocity.y = -12;
+    }
+    if (player.position.x <= enemy.position.x + enemy.width && player.position.x + player.width >= enemy.position.x && player.position.y <= enemy.position.y + enemy.height && player.position.y + player.height >= enemy.position.y + enemy.height) {
+        enemy.isAbleToAttack() ? enemy.attacking = true : enemy.attacking = false;
+        if (player.state.state === "ATTACK") {
+            enemy.velocity.y = -12;
+            enemy.onGround = false;
+            enemy.setState(0);
+            if (enemy.position.x > player.position.x) enemy.velocity.x = 4;
+            if (enemy.position.x + enemy.width < player.position.x + player.width) enemy.velocity.x = -4;
+        }
+        if (player.state.state === "ATTACKWALK") enemy.velocity.x = 0;
     }
 };
 const rectangularCollision = (rectangle1, rectangle2)=>{
@@ -1826,6 +1834,15 @@ const collisions = [
     0,
     0,
     0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    579,
+    579,
+    579,
+    579,
     579,
     579,
     0,
@@ -1862,13 +1879,18 @@ const collisions = [
     0,
     0,
     0,
+    579,
+    579,
+    579,
+    579,
+    579,
+    579,
     0,
     0,
-    0,
-    0,
-    0,
-    0,
-    0,
+    579,
+    579,
+    579,
+    579,
     579,
     579,
     0,
@@ -1879,6 +1901,36 @@ const collisions = [
     0,
     0,
     0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    579,
+    579,
+    579,
+    579,
+    579,
+    579,
+    0,
+    0,
+    579,
+    579,
+    579,
+    579,
     579,
     579,
     0,
@@ -1897,56 +1949,12 @@ const collisions = [
     0,
     0,
     0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
+    579,
+    579,
+    579,
+    579,
+    579,
+    579,
     0,
     0,
     0,
@@ -2006,6 +2014,7 @@ const collisions = [
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"cIxND":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
+var _enemyStateJs = require("./EnemyState.js");
 var _spriteJs = require("./Sprite.js");
 var _spriteJsDefault = parcelHelpers.interopDefault(_spriteJs);
 var _blueHealthBarPng = require("/assets/healthBar/blueHealthBar.png");
@@ -2013,7 +2022,11 @@ var _blueHealthBarPngDefault = parcelHelpers.interopDefault(_blueHealthBarPng);
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 class Enemy extends (0, _spriteJsDefault.default) {
-    constructor({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, maxFrames = 1 }){
+    constructor({ position, velocity, width, height, imageSrc, scale = 1, columns = 1, maxFrames = 1, attackBox = {
+        offset: {},
+        width: 35,
+        height: 35
+    } }){
         super({
             position,
             imageSrc,
@@ -2030,6 +2043,31 @@ class Enemy extends (0, _spriteJsDefault.default) {
         this.stopped = false;
         this.direction = 1;
         this.health = 100;
+        this.attacking = false;
+        this.dead = false;
+        this.frames = 0;
+        this.attackRate = 20;
+        this.attackClock = 0;
+        this.state = null;
+        this.states = [
+            new (0, _enemyStateJs.Idle)(this),
+            new (0, _enemyStateJs.Running)(this),
+            new (0, _enemyStateJs.Attack)(this),
+            new (0, _enemyStateJs.Death)(this)
+        ];
+        this.setState((0, _enemyStateJs.STATES).IDLE);
+        this.setSprite((0, _enemyStateJs.SPRITES).IDLE);
+        this.previousState = this.state;
+        //Enemy attackBox
+        this.attackBox = {
+            position: {
+                x: this.position.x,
+                y: this.position.y
+            },
+            offset: attackBox.offset,
+            width: attackBox.width,
+            height: attackBox.height
+        };
         // Enemy health bar
         this.healthBar = new (0, _spriteJsDefault.default)({
             position: {
@@ -2043,13 +2081,21 @@ class Enemy extends (0, _spriteJsDefault.default) {
             width: 64
         });
     }
-    update = ({ player, checkCollision })=>{
+    update = ({ keys, player, checkCollision, frames })=>{
+        this.frames = frames;
+        this.state.input(keys);
         this.ddraw();
         this.draw();
-        this.animateFrames();
+        if (!this.dead) this.animateFrames();
         checkCollision();
         this.moving(player.position.x, player.state, player.width, player.velocity.x, player.stopped);
         this.checkHealth();
+        if (this.attacking) {
+            c.fillStyle = "red";
+            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height);
+        }
+        this.direction === -1 ? this.attackBox.position.x = this.position.x + this.width / 2 : this.attackBox.position.x = this.position.x + this.width / 2 - this.attackBox.width;
+        this.attackBox.position.y = this.position.y;
         this.healthBar.draw();
         this.healthBar.animateFrames();
         this.healthBar.position.x = this.position.x;
@@ -2059,6 +2105,18 @@ class Enemy extends (0, _spriteJsDefault.default) {
         c.fillStyle = "green";
         c.fillRect(this.position.x, this.position.y, this.width, this.height);
     };
+    setState = (state)=>{
+        this.previousState = this.state;
+        // if (this.previousState !== this.state) {
+        this.state = this.states[state];
+        this.state.onSetState();
+    // }
+    };
+    setSprite = (sprite)=>{
+        this.image.src = sprite.imageSrc;
+        this.columns = sprite.columns;
+        this.maxFrames = sprite.maxFrames;
+    };
     moving = (pPosX, pState, pWidth, pVelX, pStop)=>{
         // console.log(pStop);
         if (pPosX === 0.8 * canvas.width - pWidth && (pState.state !== "IDLE" || pState.state !== "CROUCH") && !pStop) this.position.x = this.position.x - pVelX;
@@ -2067,6 +2125,12 @@ class Enemy extends (0, _spriteJsDefault.default) {
         this.position.y += this.velocity.y;
         this.velocity.y += this.gravity;
         this.stopped = false;
+    };
+    isAbleToAttack = ()=>{
+        return this.frames - this.attackClock > this.attackRate;
+    };
+    attack = ()=>{
+        this.attackClock = this.frames;
     };
     takeDamage = ()=>{
         this.health -= 25;
@@ -2080,13 +2144,129 @@ class Enemy extends (0, _spriteJsDefault.default) {
 }
 exports.default = Enemy;
 
-},{"./Sprite.js":"9lzH1","/assets/healthBar/blueHealthBar.png":"lCoHq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"lCoHq":[function(require,module,exports) {
+},{"./Sprite.js":"9lzH1","/assets/healthBar/blueHealthBar.png":"lCoHq","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","./EnemyState.js":"7QYH7"}],"lCoHq":[function(require,module,exports) {
 module.exports = require("fc30d919ad8593c3").getBundleURL("ksUvU") + "blueHealthBar.50d99c2e.png" + "?" + Date.now();
 
-},{"fc30d919ad8593c3":"lgJ39"}],"h26he":[function(require,module,exports) {
+},{"fc30d919ad8593c3":"lgJ39"}],"7QYH7":[function(require,module,exports) {
+var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
+parcelHelpers.export(exports, "SPRITES", ()=>SPRITES);
+parcelHelpers.export(exports, "STATES", ()=>STATES);
+parcelHelpers.export(exports, "Idle", ()=>Idle);
+parcelHelpers.export(exports, "Running", ()=>Running);
+parcelHelpers.export(exports, "Attack", ()=>Attack);
+parcelHelpers.export(exports, "Death", ()=>Death);
+var _slimeIdlePng = require("/assets/slime/slimeIdle.png");
+var _slimeIdlePngDefault = parcelHelpers.interopDefault(_slimeIdlePng);
+var _slimeAttackPng = require("/assets/slime/slimeAttack.png");
+var _slimeAttackPngDefault = parcelHelpers.interopDefault(_slimeAttackPng);
+var _slimeDeathPng = require("/assets/slime/slimeDeath.png");
+var _slimeDeathPngDefault = parcelHelpers.interopDefault(_slimeDeathPng);
+const SPRITES = {
+    IDLE: {
+        imageSrc: (0, _slimeIdlePngDefault.default),
+        columns: 8,
+        maxFrames: 8
+    },
+    ATTACK: {
+        imageSrc: (0, _slimeAttackPngDefault.default),
+        columns: 8,
+        maxFrames: 8
+    },
+    DEATH: {
+        imageSrc: (0, _slimeDeathPngDefault.default),
+        columns: 8,
+        maxFrames: 8
+    }
+};
+const STATES = {
+    IDLE: 0,
+    RUNNING: 1,
+    ATTACK: 2,
+    DEATH: 3
+};
+class State {
+    constructor({ enemy, state }){
+        this.enemy = enemy;
+        this.state = state;
+    }
+    checkDeath = ()=>{
+        if (this.enemy.health <= 0) this.enemy.setState(STATES.DEATH);
+    };
+    onSetState = ()=>{};
+}
+class Idle extends State {
+    constructor(enemy){
+        super({
+            enemy,
+            state: "IDLE"
+        });
+    }
+    input = ()=>{
+        this.enemy.setState(STATES.IDLE);
+        this.enemy.setSprite(SPRITES.IDLE);
+        if (this.enemy.onGround) this.enemy.setState(STATES.RUNNING);
+        this.checkDeath();
+    };
+}
+class Running extends State {
+    constructor(enemy){
+        super({
+            enemy,
+            state: "RUNNING"
+        });
+    }
+    input = ()=>{
+        this.enemy.setState(STATES.RUNNING);
+        this.enemy.setSprite(SPRITES.IDLE);
+        if (this.enemy.attacking && this.enemy.isAbleToAttack()) this.enemy.setState(STATES.ATTACK);
+        this.checkDeath();
+    };
+}
+class Attack extends State {
+    constructor(enemy){
+        super({
+            enemy,
+            state: "ATTACK"
+        });
+    }
+    onSetState = ()=>{
+        this.enemy.attack();
+    };
+    input = ()=>{
+        this.enemy.velocity.x = 0;
+        this.enemy.setState(STATES.ATTACK);
+        this.enemy.setSprite(SPRITES.ATTACK);
+        if (this.enemy.framesCurrent >= this.enemy.maxFrames - 1) {
+            this.enemy.setState(STATES.IDLE);
+            this.enemy.attacking = false;
+        }
+    };
+}
+class Death extends State {
+    constructor(enemy){
+        super({
+            enemy,
+            state: "DEATH"
+        });
+    }
+    input = ()=>{
+        this.enemy.setState(STATES.DEATH);
+        this.enemy.setSprite(SPRITES.DEATH);
+        if (this.enemy.framesCurrent >= this.enemy.maxFrames - 1) this.enemy.dead = true;
+    };
+}
+
+},{"/assets/slime/slimeIdle.png":"h26he","/assets/slime/slimeAttack.png":"4j9By","/assets/slime/slimeDeath.png":"6DKO8","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"h26he":[function(require,module,exports) {
 module.exports = require("2832f1231a4e616c").getBundleURL("ksUvU") + "slimeIdle.ff039d19.png" + "?" + Date.now();
 
-},{"2832f1231a4e616c":"lgJ39"}],"8C1LK":[function(require,module,exports) {
+},{"2832f1231a4e616c":"lgJ39"}],"4j9By":[function(require,module,exports) {
+module.exports = require("1bc258141d67d127").getBundleURL("ksUvU") + "slimeAttack.22821181.png" + "?" + Date.now();
+
+},{"1bc258141d67d127":"lgJ39"}],"6DKO8":[function(require,module,exports) {
+module.exports = require("1eac83beac788e23").getBundleURL("ksUvU") + "slimeDeath.bf963798.png" + "?" + Date.now();
+
+},{"1eac83beac788e23":"lgJ39"}],"8C1LK":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 var _sprite = require("./Sprite");
@@ -2113,14 +2293,42 @@ var _spacePressedPng = require("/assets/keys/spacePressed.png");
 var _spacePressedPngDefault = parcelHelpers.interopDefault(_spacePressedPng);
 var _skillBoxPng = require("/assets/keys/skillBox.png");
 var _skillBoxPngDefault = parcelHelpers.interopDefault(_skillBoxPng);
+var _bronzeCoinPng = require("/assets/coins/bronzeCoin.png");
+var _bronzeCoinPngDefault = parcelHelpers.interopDefault(_bronzeCoinPng);
+var _ironCoinPng = require("/assets/coins/ironCoin.png");
+var _ironCoinPngDefault = parcelHelpers.interopDefault(_ironCoinPng);
+var _silverCoinPng = require("/assets/coins/silverCoin.png");
+var _silverCoinPngDefault = parcelHelpers.interopDefault(_silverCoinPng);
+var _goldCoinPng = require("/assets/coins/goldCoin.png");
+var _goldCoinPngDefault = parcelHelpers.interopDefault(_goldCoinPng);
+const coins = [
+    {
+        name: "bronze",
+        img: (0, _bronzeCoinPngDefault.default)
+    },
+    {
+        name: "iron",
+        img: (0, _ironCoinPngDefault.default)
+    },
+    {
+        name: "silver",
+        img: (0, _silverCoinPngDefault.default)
+    },
+    {
+        name: "gold",
+        img: (0, _goldCoinPngDefault.default)
+    }
+];
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
 const margin = 64;
+let score = 1;
 class RenderKeys {
     constructor({ position, width, height }){
         this.position = position;
         this.width = width;
         this.height = height;
+        this.addScore = false;
         this.arrowLeft = new (0, _spriteDefault.default)({
             position: {
                 x: this.position.x + margin * 3,
@@ -2191,9 +2399,9 @@ class RenderKeys {
                 y: 0
             }
         });
-        this.skillBoxAttack1 = new (0, _spriteDefault.default)({
+        this.skillBoxAttack = new (0, _spriteDefault.default)({
             position: {
-                x: this.position.x + margin * 10,
+                x: this.position.x + margin * 9,
                 y: this.position.y + margin
             },
             width: 64,
@@ -2205,15 +2413,34 @@ class RenderKeys {
                 y: 0
             }
         });
-        this.skillBoxAttack2 = new (0, _spriteDefault.default)({
+        this.scoreArray = [];
+        this.score1 = new (0, _spriteDefault.default)({
             position: {
-                x: this.position.x + margin * 12,
-                y: this.position.y + margin
+                x: this.position.x + margin * 10,
+                y: this.position.y + margin - 16
             },
-            width: 64,
-            height: 64,
-            imageSrc: (0, _skillBoxPngDefault.default),
+            width: 32,
+            height: 32,
+            imageSrc: (0, _bronzeCoinPngDefault.default),
             scale: 2,
+            columns: 6,
+            maxFrames: 6,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        });
+        this.score2 = new (0, _spriteDefault.default)({
+            position: {
+                x: this.position.x + margin * 10,
+                y: this.position.y + margin + 16
+            },
+            width: 32,
+            height: 32,
+            imageSrc: (0, _bronzeCoinPngDefault.default),
+            scale: 2,
+            columns: 6,
+            maxFrames: 6,
             offset: {
                 x: 0,
                 y: 0
@@ -2233,15 +2460,28 @@ class RenderKeys {
         this.arrowRight.animateFrames();
         this.space.draw();
         this.space.animateFrames();
-        this.skillBoxAttack1.draw();
-        this.skillBoxAttack1.animateFrames();
-        this.skillBoxAttack2.draw();
-        this.skillBoxAttack2.animateFrames();
+        // this.skillBoxAttack.draw()
+        // this.skillBoxAttack.animateFrames()
+        this.scoreArray.forEach((score)=>{
+            score.draw();
+            score.animateFrames();
+        });
+        if (this.addScore) {
+            const newCoin = this.createNewCoin(coins[0].name, coins[0].img);
+            this.scoreArray.push(newCoin);
+            this.updateCoinPosition();
+        }
+        for(let coin in coins){
+            if (this.scoreArray.filter((x)=>x.name === "gold").length === 3) return;
+            if (this.scoreArray.filter((x)=>x.name === coins[coin].name).length === 3) {
+                let firstCoin = this.scoreArray.find((el)=>el.name === coins[coin].name);
+                this.scoreArray.splice(this.scoreArray.indexOf(firstCoin), 3);
+                const newCoin = this.createNewCoin(coins[Number(coin) + 1].name, coins[Number(coin) + 1].img);
+                this.scoreArray.push(newCoin);
+                this.updateCoinPosition();
+            }
+        }
     };
-    // ddraw = () => {
-    //     c.fillStyle = 'red'
-    //     c.fillRect(this.position.x, this.position.y, this.width, this.height)
-    // }
     checkPressedKey = (keys)=>{
         if (keys.includes("ArrowUp")) this.arrowUp.image.src = (0, _arrowUpPressedPngDefault.default);
         else this.arrowUp.image.src = (0, _arrowUpPngDefault.default);
@@ -2254,10 +2494,90 @@ class RenderKeys {
         if (keys.includes("Space")) this.space.image.src = (0, _spacePressedPngDefault.default);
         else this.space.image.src = (0, _spacePngDefault.default);
     };
+    updateCoinPosition = ()=>{
+        this.scoreArray.forEach((coin)=>{
+            let newPosition = {
+                x: 0,
+                y: 0
+            };
+            switch(this.scoreArray.indexOf(coin)){
+                case 0:
+                    coin.position.x = this.position.x + margin * 10;
+                    coin.position.y = this.position.y + margin - 16;
+                    this.addScore = false;
+                    break;
+                case 1:
+                    coin.position.x = this.position.x + margin * 10.5;
+                    coin.position.y = this.position.y + margin - 16;
+                    this.addScore = false;
+                    break;
+                case 2:
+                    coin.position.x = this.position.x + margin * 11;
+                    coin.position.y = this.position.y + margin - 16;
+                    this.addScore = false;
+                    break;
+                case 3:
+                    coin.position.x = this.position.x + margin * 11.5;
+                    coin.position.y = this.position.y + margin - 16;
+                    this.addScore = false;
+                    break;
+                case 4:
+                    coin.position.x = this.position.x + margin * 12;
+                    coin.position.y = this.position.y + margin - 16;
+                    this.addScore = false;
+                    break;
+                case 5:
+                    coin.position.x = this.position.x + margin * 10;
+                    coin.position.y = this.position.y + margin + 16;
+                    this.addScore = false;
+                    break;
+                case 6:
+                    coin.position.x = this.position.x + margin * 10.5;
+                    coin.position.y = this.position.y + margin + 16;
+                    this.addScore = false;
+                    break;
+                case 7:
+                    coin.position.x = this.position.x + margin * 11;
+                    coin.position.y = this.position.y + margin + 16;
+                    break;
+                case 8:
+                    coin.position.x = this.position.x + margin * 11.5;
+                    coin.position.y = this.position.y + margin + 16;
+                    break;
+                case 9:
+                    coin.position.x = this.position.x + margin * 12;
+                    coin.position.y = this.position.y + margin + 16;
+                    this.addScore = false;
+                    break;
+            }
+        });
+    };
+    createNewCoin = (name, img)=>{
+        const newScore = new (0, _spriteDefault.default)({
+            position: {
+                x: 0,
+                y: 0
+            },
+            width: 32,
+            height: 32,
+            imageSrc: img,
+            scale: 2,
+            columns: 6,
+            maxFrames: 6,
+            offset: {
+                x: 0,
+                y: 0
+            }
+        });
+        newScore.name = name;
+        return newScore;
+    // this.scoreArray.push(newScore)
+    // this.updateCoinPosition()
+    };
 }
 exports.default = RenderKeys;
 
-},{"./Sprite":"9lzH1","/assets/keys/arrowUp.png":"5ZcCS","/assets/keys/arrowUpPressed.png":"ewwrp","/assets/keys/arrowLeft.png":"gnVQP","/assets/keys/arrowLeftPressed.png":"9VKJr","/assets/keys/arrowDown.png":"e5tQE","/assets/keys/arrowDownPressed.png":"39CkS","/assets/keys/arrowRight.png":"ar8Q2","/assets/keys/arrowRightPressed.png":"5WqrE","/assets/keys/space.png":"bg7FV","/assets/keys/spacePressed.png":"7wUJ3","/assets/keys/skillBox.png":"lYe7Q","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3"}],"5ZcCS":[function(require,module,exports) {
+},{"./Sprite":"9lzH1","/assets/keys/arrowUp.png":"5ZcCS","/assets/keys/arrowUpPressed.png":"ewwrp","/assets/keys/arrowLeft.png":"gnVQP","/assets/keys/arrowLeftPressed.png":"9VKJr","/assets/keys/arrowDown.png":"e5tQE","/assets/keys/arrowDownPressed.png":"39CkS","/assets/keys/arrowRight.png":"ar8Q2","/assets/keys/arrowRightPressed.png":"5WqrE","/assets/keys/space.png":"bg7FV","/assets/keys/spacePressed.png":"7wUJ3","/assets/keys/skillBox.png":"lYe7Q","@parcel/transformer-js/src/esmodule-helpers.js":"gkKU3","/assets/coins/bronzeCoin.png":"fBYIe","/assets/coins/ironCoin.png":"7dGd6","/assets/coins/silverCoin.png":"jM3Ph","/assets/coins/goldCoin.png":"gkuLV"}],"5ZcCS":[function(require,module,exports) {
 module.exports = require("e46a8565b83fbbde").getBundleURL("ksUvU") + "arrowUp.2db42674.png" + "?" + Date.now();
 
 },{"e46a8565b83fbbde":"lgJ39"}],"ewwrp":[function(require,module,exports) {
@@ -2290,6 +2610,18 @@ module.exports = require("7cdbec49a81f4f86").getBundleURL("ksUvU") + "spacePress
 },{"7cdbec49a81f4f86":"lgJ39"}],"lYe7Q":[function(require,module,exports) {
 module.exports = require("4020917efff96794").getBundleURL("ksUvU") + "skillBox.1759bb35.png" + "?" + Date.now();
 
-},{"4020917efff96794":"lgJ39"}]},["fQFrJ","1Z4Rq"], "1Z4Rq", "parcelRequire1020")
+},{"4020917efff96794":"lgJ39"}],"fBYIe":[function(require,module,exports) {
+module.exports = require("9c6fd0e9ea882b0b").getBundleURL("ksUvU") + "bronzeCoin.cf5ee227.png" + "?" + Date.now();
+
+},{"9c6fd0e9ea882b0b":"lgJ39"}],"7dGd6":[function(require,module,exports) {
+module.exports = require("8c370aab1cec85e5").getBundleURL("ksUvU") + "ironCoin.59405fbc.png" + "?" + Date.now();
+
+},{"8c370aab1cec85e5":"lgJ39"}],"jM3Ph":[function(require,module,exports) {
+module.exports = require("445418974f497506").getBundleURL("ksUvU") + "silverCoin.0455fb05.png" + "?" + Date.now();
+
+},{"445418974f497506":"lgJ39"}],"gkuLV":[function(require,module,exports) {
+module.exports = require("ac262221ef7f7f72").getBundleURL("ksUvU") + "goldCoin.bcb08b46.png" + "?" + Date.now();
+
+},{"ac262221ef7f7f72":"lgJ39"}]},["fQFrJ","1Z4Rq"], "1Z4Rq", "parcelRequire1020")
 
 //# sourceMappingURL=index.5d9dacde.js.map

@@ -25,7 +25,7 @@ const update = (timeStamp) => {
     requestAnimationFrame(update)
 
 
-    if ((timer / 10) >= 1) {
+    if ((timer / 5) >= 1) {
         timer = 0
         frames++
     }
@@ -34,7 +34,7 @@ const update = (timeStamp) => {
 
     const timeStampDiff = timeStamp - prevTimeStamp || 0;
     prevTimeStamp = timeStamp;
-    // console.log(timeStampDiff);
+    
     game.update(frames)
 }
 

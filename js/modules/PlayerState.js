@@ -72,34 +72,31 @@ class State {
     constructor ({ player, state }) {
         this.player = player
         this.state = state
-        this.fps = 15
-        this.frame = 1
-        this.timer = 0
-        this.interval = 1000 / this.fps
     }
 
-    update = () => {
-        if ((this.timer / 5) >= 1) {
-            this.timer = 0
-            this.frame++
+    onSetState = () => {
+
+    }
+}
+
+class Fly extends State {
+    constructor (...args) {
+        super (...args)
+    }
+
+    flyInput = (keys) => {
+        if (keys.includes('ArrowRight')) { 
+            this.player.velocity.x = 5
+            this.player.direction = 1
         }
-        // console.log(this.timer, this.frame);
-        this.timer++
-        // if(this.frame >= this.fps) {
-        //     this.frame = 0;
-        // }
-        // this.timer += time
-        // if (Math.round(this.timer / this.interval) > 1) {
-        //     this.timer = 0;
-        //     this.frame++;
-        // }
-        // console.log(this.frame, time);
+        if (keys.includes('ArrowLeft')) { 
+            this.player.velocity.x = -5
+            this.player.direction = -1
+        }
+        if (!keys.includes('ArrowRight') && !keys.includes('ArrowLeft')) {
+            this.player.velocity.x = 0
+        }
     }
-
-    // reset = () => {
-    //     this.interval = 1000 / this.fps
-    //     this.timer = 0
-    // }
 }
 
 class Idle extends State {
@@ -130,7 +127,7 @@ class Idle extends State {
         if (keys.includes('ArrowDown')) {
             this.player.setState(STATES.CROUCH)
         }
-        if (keys.includes('Space')) {
+        if (keys.includes('Space') && this.player.isAbleToAttack()) {
             this.player.setState(STATES.ATTACKWALK)
         }
         if (this.player.velocity.y > 1) {
@@ -166,7 +163,7 @@ class Running extends State {
         if (keys.includes('ArrowDown') && this.player.onGround) {
             this.player.setState(STATES.SLIDE)
         }
-        if (keys.includes('Space')) {
+        if (keys.includes('Space') && this.player.isAbleToAttack()) {
             this.player.setState(STATES.ATTACKWALK)
         }
         if (keys.length === 0) { 
@@ -175,27 +172,7 @@ class Running extends State {
     }
 }
 
-class ChangeDirection extends State {
-    constructor (player) {
-        super ({
-            player,
-            state: 'CHANGEDIRECTION'
-        })
-    }
-
-    input = (keys) => {
-        // console.log(this.frame, this.frame % 4);
-        this.player.setState(STATES.CHANGEDIRECTION)
-        this.player.setSprite(SPRITES.CHANGEDIRECTION)
-        this.player.velocity.x = 0
-        if (this.frame % 2 === 0) {
-            this.frame = 1
-            this.player.setState(STATES.RUNNING)
-        }
-    }
-}
-
-class Jump extends State {
+class Jump extends Fly {
     constructor (player) {
         super ({
             player,
@@ -213,24 +190,17 @@ class Jump extends State {
         if(this.player.velocity.y > 0) {
             this.player.setState(STATES.FALL)
         }
-        if (keys.includes('ArrowRight')) { 
-            this.player.velocity.x = 5
-            this.player.direction = 1
-        }
-        if (keys.includes('ArrowLeft')) { 
-            this.player.velocity.x = -5
-            this.player.direction = -1
-        }
-        if (keys.includes('Space')) {
+        if (keys.includes('Space') && this.player.isAbleToAttack()) {
             this.player.setState(STATES.ATTACK)
         }
         if (this.player.onGround) {
             this.player.setState(STATES.IDLE)
         }
+        this.flyInput(keys)
     }
 }
 
-class Fall extends State {
+class Fall extends Fly {
     constructor (player) {
         super ({
             player,
@@ -244,20 +214,13 @@ class Fall extends State {
             this.player.setSprite(SPRITES.FALL)
             this.player.onGround = false
         }
-        if (keys.includes('ArrowRight')) { 
-            this.player.velocity.x = 5
-            this.player.direction = 1
-        }
-        if (keys.includes('ArrowLeft')) { 
-            this.player.velocity.x = -5
-            this.player.direction = -1
-        }
-        if (keys.includes('Space')) {
+        if (keys.includes('Space') && this.player.isAbleToAttack()) {
             this.player.setState(STATES.ATTACK)
         }
         if (this.player.onGround) {
             this.player.setState(STATES.IDLE)
         }
+        this.flyInput(keys)
     }
 }
 
@@ -343,7 +306,7 @@ class Slide extends State {
     }
 }
 
-class Attack extends State {
+class Attack extends Fly {
     constructor (player) {
         super ({
             player,
@@ -353,13 +316,17 @@ class Attack extends State {
 
     input = (keys) => {
         this.player.setSprite(SPRITES.ATTACK)
-        this.player.attack()
-        this.player.maxFrames = 1
-        // if (this.player.framesCurrent >= this.player.maxFrames - 1) {
-        // }
-        if (this.player.onGround) {
-            this.player.setState(STATES.IDLE)
+        if (!this.player.onGround) {
+            this.player.maxFrames = 1
         }
+        if (this.player.onGround && !this.player.attacking) {
+            this.player.attack()
+        }
+        if (this.player.onGround && this.player.framesCurrent >= this.player.maxFrames - 1) {
+            this.player.setState(STATES.IDLE)
+            this.player.attacking = false
+        }
+        this.flyInput(keys)
     }
 }
 
@@ -371,24 +338,16 @@ class AttackWalk extends State {
         })
     }
 
-    input = (keys) => {
-        // console.log(this.player.attackFrames, this.player.attackRate);
-        console.log(this.frame);
-        if (this.frame === 6) {
-            this.frame = 0
-            this.player.setState(STATES.IDLE)
-            return
-        }
-        if (this.player.attackFrames < this.player.attackRate) {
-            // this.player.setState(STATES.IDLE)
-            return
-        }
+    onSetState = () => {
+        this.player.attack()
+    }
+
+    input = () => {
         this.player.velocity.x = 0
         this.player.setSprite(SPRITES.ATTACKWALK)
-        this.player.attack()
-        if (this.player.framesCurrent >= this.player.maxFrames - 2) {
-            console.log("cos");
+        if (this.player.framesCurrent >= this.player.maxFrames - 1) {
             this.player.setState(STATES.IDLE)
+            this.player.attacking = false
         }
     }
 }

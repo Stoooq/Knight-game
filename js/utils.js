@@ -3,7 +3,6 @@ const arrayParse2D = (array) => {
     for (let i = 0; i < array.length; i += 48) {
         rows.push(array.slice(i, i + 48))
     }
-    
     return rows
 }
 
@@ -41,11 +40,11 @@ const checkPlayerCollision = (player, collisionBlocks) => {
 }
 
 const checkPlayerEnemyPosition = (player, enemy) => {
-    if (player.position.x + player.width * 0.6 < enemy.position.x) {
+    if (player.position.x + player.width * 0.6 < enemy.position.x && enemy.state.state === 'RUNNING') {
         enemy.velocity.x = -1.5
         enemy.direction = 1
     }
-    if (player.position.x > enemy.position.x + enemy.width * 0.6) {
+    if (player.position.x > enemy.position.x + enemy.width * 0.6 && enemy.state.state === 'RUNNING') {
         enemy.velocity.x = 1.5
         enemy.direction = -1
     }
@@ -54,7 +53,27 @@ const checkPlayerEnemyPosition = (player, enemy) => {
         player.position.x + player.width * 0.6 > enemy.position.x &&
         enemy.onGround) {
         enemy.onGround = false
-        enemy.velocity.y = -15
+        enemy.velocity.y = -12
+    }
+    if (player.position.x <= enemy.position.x + enemy.width &&
+        player.position.x + player.width >= enemy.position.x &&
+        player.position.y <= enemy.position.y + enemy.height &&
+        player.position.y + player.height >= enemy.position.y + enemy.height) {
+        enemy.isAbleToAttack() ? enemy.attacking = true : enemy.attacking = false
+        if (player.state.state === 'ATTACK') {
+            enemy.velocity.y = -12
+            enemy.onGround = false
+            enemy.setState(0)
+            if (enemy.position.x > player.position.x) {
+                enemy.velocity.x = 4
+            }
+            if (enemy.position.x + enemy.width < player.position.x + player.width) {
+                enemy.velocity.x = -4
+            }
+        }
+        if (player.state.state === 'ATTACKWALK') {
+            enemy.velocity.x = 0
+        }
     }
 }
 

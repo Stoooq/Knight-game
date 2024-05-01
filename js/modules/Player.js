@@ -35,8 +35,8 @@ class Player extends Sprite {
         this.attacking = false
         this.health = 100
         this.stopped = false
-        this.attackFrames = 0
-        this.attackRate = 20
+        this.frames = 0
+        this.attackRate = 2
         this.attackClock = 0
 
         //Player attackBox
@@ -65,15 +65,8 @@ class Player extends Sprite {
     }
 
     update = ({ keys, gameWidth, gameHeight, checkCollision, frames }) => {
-        if (this.attackClock / 5 >= 1) {
-            this.attackClock = 0
-            this.attackFrames++
-        }
-        this.attackClock++
-        // console.log(this.attackClock, this.attackFrames);
-        // this.attackFrames = frames
+        this.frames = frames
         this.state.input(keys)
-        this.state.update()
         this.ddraw()
         this.animateFrames()
         this.draw()
@@ -87,8 +80,8 @@ class Player extends Sprite {
         this.healthBar.position.y = this.position.y - 32
 
         if (this.attacking) {
-            // c.fillStyle = 'red'
-            // c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+            c.fillStyle = 'red'
+            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
         }
         this.direction === 1 ? this.attackBox.position.x = this.position.x + this.width / 2 : this.attackBox.position.x = this.position.x + this.width / 2 - this.attackBox.width
         this.attackBox.position.y = this.position.y
@@ -105,7 +98,7 @@ class Player extends Sprite {
         if (this.previousState !== this.state) {
             this.framesCurrent = 0
         }
-        // this.state.reset()
+        this.state.onSetState()
     }
 
     setSprite = (sprite) => {
@@ -149,13 +142,13 @@ class Player extends Sprite {
         // this.position.x = Math.round(this.position.x)
     }
 
+    isAbleToAttack = () => {
+        return this.frames - this.attackClock > this.attackRate
+    }
+
     attack = () => {
         this.attacking = true
-        this.attackFrames = 0
-        // if (this.attackFrames - this.attackClock < this.attackRate) return
-        // this.attackClock = this.attackFrames
-        // console.log("koniec atak");
-        // this.attacking = false
+        this.attackClock = this.frames
     }
 
     takeDamage = () => {
