@@ -311,8 +311,6 @@ class RenderKeys{
         })
         newScore.name = name
         return newScore
-        // this.scoreArray.push(newScore)
-        // this.updateCoinPosition()
     }
 }
 

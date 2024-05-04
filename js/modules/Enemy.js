@@ -29,6 +29,7 @@ class Enemy extends Sprite {
         this.frames = 0
         this.attackRate = 20
         this.attackClock = 0
+        this.playerOnEnemyCollision = false
 
         this.state = null
         this.states = [new Idle(this), new Running(this), new Attack(this), new Death(this)]
@@ -61,22 +62,23 @@ class Enemy extends Sprite {
         })
     }
 
-    update = ({ keys, player, checkCollision, frames }) => {
+    update = ({ keys, player, checkCollision, frames, enemies, playerOnEnemy }) => {
+        this.playerOnEnemyCollision = playerOnEnemy(player, this)
         this.frames = frames
-        this.state.input(keys)
-        this.ddraw()
+        this.state.input(this, enemies)
+        // this.ddraw()
         this.draw()
         if (!this.dead) {
             this.animateFrames()
         }
-        checkCollision()
+        checkCollision(this)
         this.moving(player.position.x, player.state, player.width, player.velocity.x, player.stopped)
         this.checkHealth()
 
-        if (this.attacking) {
-            c.fillStyle = 'red'
-            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
-        }
+        // if (this.attacking) {
+        //     c.fillStyle = 'blue'
+        //     c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+        // }
         this.direction === -1 ? this.attackBox.position.x = this.position.x + this.width / 2 : this.attackBox.position.x = this.position.x + this.width / 2 - this.attackBox.width
         this.attackBox.position.y = this.position.y
 
@@ -106,7 +108,6 @@ class Enemy extends Sprite {
     }
     
     moving = (pPosX, pState, pWidth, pVelX, pStop) => {
-        // console.log(pStop);
         if (pPosX === 0.8 * canvas.width - pWidth && (pState.state !== 'IDLE' || pState.state !== 'CROUCH') && !pStop) {
             this.position.x = this.position.x - pVelX
         }
@@ -127,6 +128,7 @@ class Enemy extends Sprite {
     }
 
     attack = () => {
+        this.attacking = true
         this.attackClock = this.frames
     }
 

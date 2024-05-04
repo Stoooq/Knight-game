@@ -71,7 +71,8 @@ class Running extends State {
     input = () => {
         this.enemy.setState(STATES.RUNNING)
         this.enemy.setSprite(SPRITES.IDLE)
-        if (this.enemy.attacking && this.enemy.isAbleToAttack()) {
+        console.log(this.enemy.isAbleToAttack());
+        if (this.enemy.playerOnEnemyCollision && this.enemy.isAbleToAttack()) {
             this.enemy.setState(STATES.ATTACK)
         }
         this.checkDeath()
@@ -109,11 +110,16 @@ class Death extends State {
         })
     }
 
-    input = () => {
+    onSetState = () => {
+        this.enemy.attack()
+    }
+
+    input = (enemy, enemies) => {
         this.enemy.setState(STATES.DEATH)
         this.enemy.setSprite(SPRITES.DEATH)
         if (this.enemy.framesCurrent >= this.enemy.maxFrames - 1) {
             this.enemy.dead = true
+            enemies.splice(enemies.indexOf(enemy), 1)
         }
     }
 }

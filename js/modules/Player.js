@@ -67,7 +67,7 @@ class Player extends Sprite {
     update = ({ keys, gameWidth, gameHeight, checkCollision, frames }) => {
         this.frames = frames
         this.state.input(keys)
-        this.ddraw()
+        // this.ddraw()
         this.animateFrames()
         this.draw()
         checkCollision()
@@ -79,10 +79,10 @@ class Player extends Sprite {
         this.healthBar.position.x = this.position.x
         this.healthBar.position.y = this.position.y - 32
 
-        if (this.attacking) {
-            c.fillStyle = 'red'
-            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
-        }
+        // if (this.attacking) {
+        //     c.fillStyle = 'red'
+        //     c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+        // }
         this.direction === 1 ? this.attackBox.position.x = this.position.x + this.width / 2 : this.attackBox.position.x = this.position.x + this.width / 2 - this.attackBox.width
         this.attackBox.position.y = this.position.y
     }

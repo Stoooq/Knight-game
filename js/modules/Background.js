@@ -56,13 +56,6 @@ class Background {
             })
         }
         
-        // let cos = this.positionX3
-        // for (let i = 1; i < gameImages; i++) {
-        //     if (pFicPosX > i * canvas.width) {
-        //         cos += i * canvas.width
-        //     }
-        // }
-        
         c.drawImage(this.image5, 0, 0, canvas.width, 704)
         c.drawImage(this.image1, this.positionX1, 0, canvas.width, 576)
         c.drawImage(this.image1, this.positionX1 + canvas.width, 0, canvas.width, 576)
@@ -70,7 +63,7 @@ class Background {
         c.drawImage(this.image2, this.positionX2 + canvas.width, 0, canvas.width, 576)
         c.drawImage(this.image3, this.positionX3, 0, canvas.width, 576)
         c.drawImage(this.image3, this.positionX3 + canvas.width, 0, canvas.width, 576)
-        c.drawImage(this.image4, this.positionX4, 0, 3072, 576)
+        c.drawImage(this.image3, this.positionX3 + 2 * canvas.width, 0, canvas.width, 576)
         c.drawImage(this.image4, this.positionX4, 0, 3072, 576)
     }
 }

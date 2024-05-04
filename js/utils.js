@@ -39,12 +39,25 @@ const checkPlayerCollision = (player, collisionBlocks) => {
     })
 }
 
+const playerOnEnemy = (player, enemy) => {
+    return (player.position.x <= enemy.position.x + enemy.width &&
+        player.position.x + player.width >= enemy.position.x &&
+        player.position.y <= enemy.position.y + enemy.height &&
+        player.position.y + player.height >= enemy.position.y + enemy.height)
+}
+
 const checkPlayerEnemyPosition = (player, enemy) => {
     if (player.position.x + player.width * 0.6 < enemy.position.x && enemy.state.state === 'RUNNING') {
+        if (enemy.velocity.x === 0 && enemy.state.state === 'RUNNING') {
+            enemy.velocity.y = -8
+        }
         enemy.velocity.x = -1.5
         enemy.direction = 1
     }
     if (player.position.x > enemy.position.x + enemy.width * 0.6 && enemy.state.state === 'RUNNING') {
+        if (enemy.velocity.x === 0 && enemy.state.state === 'RUNNING') {
+            enemy.velocity.y = -8
+        }
         enemy.velocity.x = 1.5
         enemy.direction = -1
     }
@@ -53,14 +66,10 @@ const checkPlayerEnemyPosition = (player, enemy) => {
         player.position.x + player.width * 0.6 > enemy.position.x &&
         enemy.onGround) {
         enemy.onGround = false
-        enemy.velocity.y = -12
+        enemy.velocity.y = -10
     }
-    if (player.position.x <= enemy.position.x + enemy.width &&
-        player.position.x + player.width >= enemy.position.x &&
-        player.position.y <= enemy.position.y + enemy.height &&
-        player.position.y + player.height >= enemy.position.y + enemy.height) {
-        enemy.isAbleToAttack() ? enemy.attacking = true : enemy.attacking = false
-        if (player.state.state === 'ATTACK') {
+    if (playerOnEnemy(player, enemy)) {
+        if (player.state.state === 'ATTACK' || player.state.state === 'SLIDE') {
             enemy.velocity.y = -12
             enemy.onGround = false
             enemy.setState(0)
@@ -86,4 +95,4 @@ const rectangularCollision = (rectangle1, rectangle2) => {
     )
 }
 
-export { arrayParse2D, checkPlayerCollision, checkPlayerEnemyPosition, rectangularCollision }
+export { arrayParse2D, checkPlayerCollision, checkPlayerEnemyPosition, rectangularCollision, playerOnEnemy }

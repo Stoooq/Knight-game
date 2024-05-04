@@ -678,22 +678,6 @@ class Game {
         this.newEnemyDelay = 20;
         this.newEnemyClock = 0;
         this.enemies = [];
-        this.enemy = new (0, _enemyJsDefault.default)({
-            position: {
-                x: 300,
-                y: 200
-            },
-            velocity: {
-                x: 0,
-                y: 0
-            },
-            width: 70,
-            height: 35,
-            imageSrc: (0, _slimeIdlePngDefault.default),
-            scale: 3,
-            columns: 8,
-            maxFrames: 8
-        });
         this.renderKeys = new (0, _renderKeysJsDefault.default)({
             position: {
                 x: 0,
@@ -705,22 +689,24 @@ class Game {
     }
     checkPlayerCollision = ()=>{
         (0, _utilsJs.checkPlayerCollision)(this.player, this.collisionBlocks);
-        if ((0, _utilsJs.rectangularCollision)(this.player, this.enemy) && this.player.attacking && this.player.framesCurrent === 3) {
-            this.player.attacking = false;
-            this.enemy.takeDamage();
-            this.renderKeys.addScore = true;
-        }
+        this.enemies.forEach((enemy)=>{
+            if ((0, _utilsJs.rectangularCollision)(this.player, enemy) && this.player.attacking && this.player.framesCurrent === 3) {
+                this.player.attacking = false;
+                enemy.takeDamage();
+            }
+        });
     };
-    checkEnemyCollision = ()=>{
-        (0, _utilsJs.checkPlayerCollision)(this.enemy, this.collisionBlocks);
-        (0, _utilsJs.checkPlayerEnemyPosition)(this.player, this.enemy);
-        if ((0, _utilsJs.rectangularCollision)(this.enemy, this.player) && this.enemy.attacking && this.enemy.framesCurrent === 3) {
-            this.enemy.attacking = false;
-            this.player.takeDamage();
+    checkEnemyCollision = (enemy)=>{
+        (0, _utilsJs.checkPlayerCollision)(enemy, this.collisionBlocks);
+        (0, _utilsJs.checkPlayerEnemyPosition)(this.player, enemy);
+        if ((0, _utilsJs.rectangularCollision)(enemy, this.player) && enemy.attacking && enemy.framesCurrent === 3) {
+            console.log("cos");
+            enemy.attacking = false;
+            if (this.player.state.state !== "SLIDE") this.player.takeDamage();
         }
     };
     renderEnemies = (frames)=>{
-        if (frames - this.newEnemyClock > Math.round(this.newEnemyDelay)) {
+        if (frames - this.newEnemyClock > Math.round(this.newEnemyDelay) && this.enemies.length <= 10) {
             const newEnemy = new (0, _enemyJsDefault.default)({
                 position: {
                     x: 300,
@@ -756,18 +742,15 @@ class Game {
                 keys: this.input.keys,
                 player: this.player,
                 checkCollision: this.checkEnemyCollision,
-                frames: frames
+                frames: frames,
+                enemies: this.enemies,
+                playerOnEnemy: (0, _utilsJs.playerOnEnemy)
             });
+            if (enemy.dead) this.renderKeys.addScore = true;
         });
-        // this.renderEnemies(frames)
-        this.enemy.update({
-            keys: this.input.keys,
-            player: this.player,
-            checkCollision: this.checkEnemyCollision,
-            frames: frames
-        });
+        this.renderEnemies(frames);
         this.collisionBlocks.forEach((block)=>{
-            block.draw();
+        // block.draw()
         });
         this.renderKeys.update(this.input.keys);
     };
@@ -854,7 +837,7 @@ class Player extends (0, _spriteJsDefault.default) {
     update = ({ keys, gameWidth, gameHeight, checkCollision, frames })=>{
         this.frames = frames;
         this.state.input(keys);
-        this.ddraw();
+        // this.ddraw()
         this.animateFrames();
         this.draw();
         checkCollision();
@@ -864,10 +847,10 @@ class Player extends (0, _spriteJsDefault.default) {
         this.healthBar.animateFrames();
         this.healthBar.position.x = this.position.x;
         this.healthBar.position.y = this.position.y - 32;
-        if (this.attacking) {
-            c.fillStyle = "red";
-            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height);
-        }
+        // if (this.attacking) {
+        //     c.fillStyle = 'red'
+        //     c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+        // }
         this.direction === 1 ? this.attackBox.position.x = this.position.x + this.width / 2 : this.attackBox.position.x = this.position.x + this.width / 2 - this.attackBox.width;
         this.attackBox.position.y = this.position.y;
     };
@@ -1458,12 +1441,6 @@ class Background {
                 block.position.x = block.position.x - pVelX;
             });
         }
-        // let cos = this.positionX3
-        // for (let i = 1; i < gameImages; i++) {
-        //     if (pFicPosX > i * canvas.width) {
-        //         cos += i * canvas.width
-        //     }
-        // }
         c.drawImage(this.image5, 0, 0, canvas.width, 704);
         c.drawImage(this.image1, this.positionX1, 0, canvas.width, 576);
         c.drawImage(this.image1, this.positionX1 + canvas.width, 0, canvas.width, 576);
@@ -1471,7 +1448,7 @@ class Background {
         c.drawImage(this.image2, this.positionX2 + canvas.width, 0, canvas.width, 576);
         c.drawImage(this.image3, this.positionX3, 0, canvas.width, 576);
         c.drawImage(this.image3, this.positionX3 + canvas.width, 0, canvas.width, 576);
-        c.drawImage(this.image4, this.positionX4, 0, 3072, 576);
+        c.drawImage(this.image3, this.positionX3 + 2 * canvas.width, 0, canvas.width, 576);
         c.drawImage(this.image4, this.positionX4, 0, 3072, 576);
     };
 }
@@ -1518,6 +1495,7 @@ parcelHelpers.export(exports, "arrayParse2D", ()=>arrayParse2D);
 parcelHelpers.export(exports, "checkPlayerCollision", ()=>checkPlayerCollision);
 parcelHelpers.export(exports, "checkPlayerEnemyPosition", ()=>checkPlayerEnemyPosition);
 parcelHelpers.export(exports, "rectangularCollision", ()=>rectangularCollision);
+parcelHelpers.export(exports, "playerOnEnemy", ()=>playerOnEnemy);
 const arrayParse2D = (array)=>{
     const rows = [];
     for(let i = 0; i < array.length; i += 48)rows.push(array.slice(i, i + 48));
@@ -1543,22 +1521,26 @@ const checkPlayerCollision = (player, collisionBlocks)=>{
         }
     });
 };
+const playerOnEnemy = (player, enemy)=>{
+    return player.position.x <= enemy.position.x + enemy.width && player.position.x + player.width >= enemy.position.x && player.position.y <= enemy.position.y + enemy.height && player.position.y + player.height >= enemy.position.y + enemy.height;
+};
 const checkPlayerEnemyPosition = (player, enemy)=>{
     if (player.position.x + player.width * 0.6 < enemy.position.x && enemy.state.state === "RUNNING") {
+        if (enemy.velocity.x === 0 && enemy.state.state === "RUNNING") enemy.velocity.y = -8;
         enemy.velocity.x = -1.5;
         enemy.direction = 1;
     }
     if (player.position.x > enemy.position.x + enemy.width * 0.6 && enemy.state.state === "RUNNING") {
+        if (enemy.velocity.x === 0 && enemy.state.state === "RUNNING") enemy.velocity.y = -8;
         enemy.velocity.x = 1.5;
         enemy.direction = -1;
     }
     if (player.position.y + player.height < enemy.position.y && player.position.x < enemy.position.x + enemy.width * 0.6 && player.position.x + player.width * 0.6 > enemy.position.x && enemy.onGround) {
         enemy.onGround = false;
-        enemy.velocity.y = -12;
+        enemy.velocity.y = -10;
     }
-    if (player.position.x <= enemy.position.x + enemy.width && player.position.x + player.width >= enemy.position.x && player.position.y <= enemy.position.y + enemy.height && player.position.y + player.height >= enemy.position.y + enemy.height) {
-        enemy.isAbleToAttack() ? enemy.attacking = true : enemy.attacking = false;
-        if (player.state.state === "ATTACK") {
+    if (playerOnEnemy(player, enemy)) {
+        if (player.state.state === "ATTACK" || player.state.state === "SLIDE") {
             enemy.velocity.y = -12;
             enemy.onGround = false;
             enemy.setState(0);
@@ -2048,6 +2030,7 @@ class Enemy extends (0, _spriteJsDefault.default) {
         this.frames = 0;
         this.attackRate = 20;
         this.attackClock = 0;
+        this.playerOnEnemyCollision = false;
         this.state = null;
         this.states = [
             new (0, _enemyStateJs.Idle)(this),
@@ -2081,19 +2064,20 @@ class Enemy extends (0, _spriteJsDefault.default) {
             width: 64
         });
     }
-    update = ({ keys, player, checkCollision, frames })=>{
+    update = ({ keys, player, checkCollision, frames, enemies, playerOnEnemy })=>{
+        this.playerOnEnemyCollision = playerOnEnemy(player, this);
         this.frames = frames;
-        this.state.input(keys);
-        this.ddraw();
+        this.state.input(this, enemies);
+        // this.ddraw()
         this.draw();
         if (!this.dead) this.animateFrames();
-        checkCollision();
+        checkCollision(this);
         this.moving(player.position.x, player.state, player.width, player.velocity.x, player.stopped);
         this.checkHealth();
-        if (this.attacking) {
-            c.fillStyle = "red";
-            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height);
-        }
+        // if (this.attacking) {
+        //     c.fillStyle = 'blue'
+        //     c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+        // }
         this.direction === -1 ? this.attackBox.position.x = this.position.x + this.width / 2 : this.attackBox.position.x = this.position.x + this.width / 2 - this.attackBox.width;
         this.attackBox.position.y = this.position.y;
         this.healthBar.draw();
@@ -2118,7 +2102,6 @@ class Enemy extends (0, _spriteJsDefault.default) {
         this.maxFrames = sprite.maxFrames;
     };
     moving = (pPosX, pState, pWidth, pVelX, pStop)=>{
-        // console.log(pStop);
         if (pPosX === 0.8 * canvas.width - pWidth && (pState.state !== "IDLE" || pState.state !== "CROUCH") && !pStop) this.position.x = this.position.x - pVelX;
         if (pPosX === 0.2 * canvas.width && (pState.state !== "IDLE" || pState.state !== "CROUCH") && !pStop) this.position.x = this.position.x - pVelX;
         if (!this.stopped) this.position.x += this.velocity.x;
@@ -2130,6 +2113,7 @@ class Enemy extends (0, _spriteJsDefault.default) {
         return this.frames - this.attackClock > this.attackRate;
     };
     attack = ()=>{
+        this.attacking = true;
         this.attackClock = this.frames;
     };
     takeDamage = ()=>{
@@ -2219,7 +2203,8 @@ class Running extends State {
     input = ()=>{
         this.enemy.setState(STATES.RUNNING);
         this.enemy.setSprite(SPRITES.IDLE);
-        if (this.enemy.attacking && this.enemy.isAbleToAttack()) this.enemy.setState(STATES.ATTACK);
+        console.log(this.enemy.isAbleToAttack());
+        if (this.enemy.playerOnEnemyCollision && this.enemy.isAbleToAttack()) this.enemy.setState(STATES.ATTACK);
         this.checkDeath();
     };
 }
@@ -2250,10 +2235,16 @@ class Death extends State {
             state: "DEATH"
         });
     }
-    input = ()=>{
+    onSetState = ()=>{
+        this.enemy.attack();
+    };
+    input = (enemy, enemies)=>{
         this.enemy.setState(STATES.DEATH);
         this.enemy.setSprite(SPRITES.DEATH);
-        if (this.enemy.framesCurrent >= this.enemy.maxFrames - 1) this.enemy.dead = true;
+        if (this.enemy.framesCurrent >= this.enemy.maxFrames - 1) {
+            this.enemy.dead = true;
+            enemies.splice(enemies.indexOf(enemy), 1);
+        }
     };
 }
 
@@ -2571,8 +2562,6 @@ class RenderKeys {
         });
         newScore.name = name;
         return newScore;
-    // this.scoreArray.push(newScore)
-    // this.updateCoinPosition()
     };
 }
 exports.default = RenderKeys;

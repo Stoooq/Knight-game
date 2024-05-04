@@ -2,7 +2,7 @@ import Player from "./Player.js";
 import Input from "./Input.js";
 import Background from "./Background.js";
 import CollisionBlock from "./CollisionBlock.js";
-import { arrayParse2D, checkPlayerCollision, checkPlayerEnemyPosition, rectangularCollision } from "../utils.js";
+import { arrayParse2D, checkPlayerCollision, checkPlayerEnemyPosition, rectangularCollision, playerOnEnemy } from "../utils.js";
 import { collisions } from "../data/collisions.js"
 import Enemy from "./Enemy.js";
 import playerImg from '/assets/knight/_Idle.png'
@@ -55,22 +55,6 @@ class Game {
         this.newEnemyDelay = 20
         this.newEnemyClock = 0
         this.enemies = []
-        this.enemy = new Enemy({
-            position: {
-                x: 300,
-                y: 200
-            },
-            velocity: {
-                x: 0,
-                y: 0
-            },
-            width: 70,
-            height: 35,
-            imageSrc: enemyImg,
-            scale: 3,
-            columns: 8,
-            maxFrames: 8
-        })
         this.renderKeys = new RenderKeys({
             position: {
                 x: 0,
@@ -83,24 +67,28 @@ class Game {
 
     checkPlayerCollision = () => {
         checkPlayerCollision(this.player, this.collisionBlocks)
-        if (rectangularCollision(this.player, this.enemy) && this.player.attacking && this.player.framesCurrent === 3) {
-            this.player.attacking = false
-            this.enemy.takeDamage()
-            this.renderKeys.addScore = true
-        }
+        this.enemies.forEach(enemy => {
+            if (rectangularCollision(this.player, enemy) && this.player.attacking && this.player.framesCurrent === 3) {
+                this.player.attacking = false
+                enemy.takeDamage()
+            }
+        })
     }
 
-    checkEnemyCollision = () => {
-        checkPlayerCollision(this.enemy, this.collisionBlocks)
-        checkPlayerEnemyPosition(this.player, this.enemy)
-        if (rectangularCollision(this.enemy, this.player) && this.enemy.attacking && this.enemy.framesCurrent === 3) {
-            this.enemy.attacking = false
-            this.player.takeDamage()
+    checkEnemyCollision = (enemy) => {
+        checkPlayerCollision(enemy, this.collisionBlocks)
+        checkPlayerEnemyPosition(this.player, enemy)
+        if (rectangularCollision(enemy, this.player) && enemy.attacking && enemy.framesCurrent === 3) {
+            console.log("cos");
+            enemy.attacking = false
+            if (this.player.state.state !== 'SLIDE') {
+                this.player.takeDamage()
+            }
         }
     }
 
     renderEnemies = (frames) => {
-        if (frames - this.newEnemyClock > Math.round(this.newEnemyDelay)) {
+        if (frames - this.newEnemyClock > Math.round(this.newEnemyDelay) && this.enemies.length <= 10) {
             const newEnemy = new Enemy({
                 position: {
                     x: 300,
@@ -119,7 +107,7 @@ class Game {
             })
             this.enemies.push(newEnemy)
             this.newEnemyClock = frames
-            this.newEnemyDelay = 2/Math.log(frames) * 200, frames
+            this.newEnemyDelay = 2 / Math.log(frames) * 200, frames
         }
     }
 
@@ -137,18 +125,17 @@ class Game {
                 keys: this.input.keys,
                 player: this.player,
                 checkCollision: this.checkEnemyCollision,
-                frames: frames
+                frames: frames,
+                enemies: this.enemies,
+                playerOnEnemy:playerOnEnemy
             })
+            if (enemy.dead) {
+                this.renderKeys.addScore = true
+            }
         })
-        // this.renderEnemies(frames)
-        this.enemy.update({
-            keys: this.input.keys,
-            player: this.player,
-            checkCollision: this.checkEnemyCollision,
-            frames: frames
-        })
+        this.renderEnemies(frames)
         this.collisionBlocks.forEach(block => {
-            block.draw()
+            // block.draw()
         })
         this.renderKeys.update(this.input.keys)
     }
